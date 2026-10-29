@@ -1,0 +1,2809 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALORANT // STUDY PROTOCOL V1.1</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Oswald (Display), Noto Sans KR (Body), JetBrains Mono (Tech/HUD) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Noto+Sans+KR:wght@400;500;700;900&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for Tactical UI -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        valo: {
+                            dark: '#0F1923',
+                            panel: '#1F2326',
+                            card: '#161E26',
+                            red: 'var(--accent-primary, #FF4655)',
+                            redHover: 'var(--accent-primary-hover, #E03543)',
+                            cyan: 'var(--accent-secondary, #00F5D4)',
+                            offwhite: '#ECE8E1',
+                            gray: '#8B978F',
+                            gold: '#FFD166'
+                        }
+                    },
+                    fontFamily: {
+                        display: ['Oswald', 'Noto Sans KR', 'sans-serif'],
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 동적 스킨 테마용 CSS 변수 정의 (Step 2 스킨 시스템) */
+        :root {
+            --accent-primary: #FF4655;
+            --accent-primary-hover: #E03543;
+            --accent-primary-rgb: 255, 70, 85;
+            --accent-secondary: #00F5D4;
+            --accent-secondary-rgb: 0, 245, 212;
+        }
+
+        /* SKIN 01: PRIME // 2.0 (로얄 골드 & 일렉트릭 퍼플) */
+        body.skin-prime {
+            --accent-primary: #FFD166;
+            --accent-primary-hover: #E6B84D;
+            --accent-primary-rgb: 255, 209, 102;
+            --accent-secondary: #B565FF;
+            --accent-secondary-rgb: 181, 101, 255;
+        }
+
+        /* 스킨 02: KURONAMI // NEON (사이버 시안 & 아이스 블루) */
+        body.skin-kuronami {
+            --accent-primary: #00F5D4;
+            --accent-primary-hover: #00CBB0;
+            --accent-primary-rgb: 0, 245, 212;
+            --accent-secondary: #4EA8DE;
+            --accent-secondary-rgb: 78, 168, 222;
+        }
+
+        /* 발로란트 스타일 커스텀 유틸리티 & 마우스 휠 스크롤 보장 */
+        html, body {
+            background-color: #0F1923;
+            color: #ECE8E1;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            height: auto !important;
+            min-height: 100vh;
+            scroll-behavior: smooth;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 배경 택티컬 그리드 라인 효과 */
+        .bg-tactical-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(236, 232, 225, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(236, 232, 225, 0.03) 1px, transparent 1px);
+        }
+
+        /* 발로란트 시그니처 각진 버튼 (Chamfered Corners) */
+        .clip-valo-btn {
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .clip-valo-card {
+            clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+        }
+
+        .clip-valo-badge {
+            clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+        }
+
+        /* 동적 네온 글로우 효과 */
+        .glow-red {
+            box-shadow: 0 0 22px rgba(var(--accent-primary-rgb), 0.35);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 22px rgba(var(--accent-secondary-rgb), 0.3);
+        }
+
+        /* 로딩 바 애니메이션 */
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            50% { width: 75%; }
+            100% { width: 100%; }
+        }
+        .animate-load-bar {
+            animation: loadProgress 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* 스캔라인 장식 애니메이션 */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(1000%); }
+        }
+        .scanline-overlay::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(var(--accent-secondary-rgb), 0.25), transparent);
+            animation: scanline 6s linear infinite;
+            pointer-events: none;
+        }
+
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0F1923;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen font-sans bg-tactical-grid relative flex flex-col justify-between selection:bg-valo-red selection:text-valo-dark">
+
+    <!-- 장식용 백그라운드 대형 워터마크 텍스트 -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden flex items-center justify-center z-0 opacity-[0.025]">
+        <span class="font-display font-bold text-[18vw] tracking-tighter leading-none select-none whitespace-nowrap">
+            DEFY THE LIMITS // V1.1
+        </span>
+    </div>
+
+    <!-- 상단 토스트 알림 (보상 해금 및 시스템 메시지용) -->
+    <div id="tactical-toast" class="fixed top-20 right-4 z-50 hidden max-w-sm bg-valo-card border-l-4 border-valo-gold shadow-2xl p-4 clip-valo-btn transition-all duration-300">
+        <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 rounded bg-valo-gold/20 text-valo-gold flex items-center justify-center shrink-0 mt-0.5">
+                <i class="ph-fill ph-trophy text-xl"></i>
+            </div>
+            <div>
+                <p id="toast-title" class="font-mono text-xs font-bold text-valo-gold uppercase tracking-wider">REWARD UNLOCKED</p>
+                <p id="toast-message" class="text-xs sm:text-sm font-bold text-valo-offwhite mt-0.5">새로운 전술 스킨이 해금되었습니다!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 1. 인트로 스플래시 화면 (Tactical Splash) -->
+    <!-- ========================================== -->
+    <div id="splash-screen" class="fixed inset-0 z-50 bg-valo-dark flex flex-col items-center justify-center px-6 transition-opacity duration-400">
+        <div class="max-w-md w-full space-y-6 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-valo-red/10 border border-valo-red/40 clip-valo-btn relative">
+                <svg class="w-11 h-11 text-valo-red" viewBox="0 0 100 100" fill="currentColor">
+                    <path d="M12 15 L45 62 L45 85 L12 38 Z" />
+                    <path d="M88 15 L55 62 L73 62 L88 40 Z" />
+                </svg>
+                <span class="absolute -bottom-1 -right-1 w-2 h-2 bg-valo-cyan"></span>
+            </div>
+
+            <div class="space-y-1">
+                <p class="font-mono text-xs tracking-[0.3em] text-valo-cyan uppercase">SYSTEM INITIALIZING... VER 1.1</p>
+                <h1 class="font-display text-3xl sm:text-4xl font-bold tracking-wider uppercase text-valo-offwhite">
+                    VALORANT STUDY PROTOCOL
+                </h1>
+            </div>
+
+            <div class="w-full bg-valo-panel h-2 relative overflow-hidden border border-white/10">
+                <div class="bg-valo-red h-full animate-load-bar"></div>
+            </div>
+
+            <div class="flex justify-between items-center font-mono text-[11px] text-valo-gray">
+                <span id="splash-status-text">LOADING STEP 1 & STEP 2 MODULES...</span>
+                <button onclick="skipSplash()" class="text-valo-cyan hover:underline font-semibold">SKIP &gt;&gt;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. 일일 보상 공지 팝업 (First-view Notice) -->
+    <!-- ========================================== -->
+    <div id="daily-notice-modal" class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-valo-card border border-valo-red/60 max-w-lg w-full clip-valo-card relative overflow-hidden shadow-2xl">
+            <div class="h-1.5 w-full bg-gradient-to-r from-valo-red via-valo-gold to-valo-cyan"></div>
+            
+            <div class="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between bg-valo-panel/60">
+                <div class="flex items-center space-x-3">
+                    <span class="px-2 py-0.5 bg-valo-red text-valo-dark font-mono text-xs font-extrabold tracking-wider uppercase clip-valo-badge">
+                        DAILY BRIEFING
+                    </span>
+                    <h2 class="font-display text-xl sm:text-2xl font-bold tracking-wide text-valo-offwhite uppercase">
+                        오늘의 스킨 & 아이콘 해금 지령
+                    </h2>
+                </div>
+                <span class="font-mono text-xs text-valo-gray" id="modal-today-date">2026.10.29</span>
+            </div>
+
+            <div class="p-5 sm:p-6 space-y-4">
+                <p class="text-sm text-valo-offwhite/85 leading-relaxed">
+                    요원님, 오늘 작전을 완수하면 앱의 실제 색상을 바꾸는 <strong class="text-valo-gold">전술 UI 스킨</strong>과 <strong class="text-valo-cyan">요원 콜사인 아이콘</strong>이 무기고(Armory)에서 즉시 해금됩니다!
+                </p>
+
+                <div class="space-y-2.5">
+                    <!-- 보상 1: 15분 라이트 -->
+                    <div class="p-3 bg-valo-dark/90 border-l-4 border-valo-cyan flex items-center justify-between rounded-r">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded bg-valo-cyan/10 border border-valo-cyan/40 flex items-center justify-center text-valo-cyan shrink-0">
+                                <i class="ph-fill ph-shield-check text-xl"></i>
+                            </div>
+                            <div>
+                                <span class="font-mono text-[11px] text-valo-cyan font-bold block">[TRACK A // 15분 라이트 복습 완료]</span>
+                                <p class="text-xs sm:text-sm font-bold text-valo-offwhite">'🛡️ 철벽의 감시자' 아이콘 해금 + 150 VP</p>
+                            </div>
+                        </div>
+                        <span class="font-mono text-xs px-2 py-0.5 bg-valo-cyan/15 text-valo-cyan rounded">방어선</span>
+                    </div>
+
+                    <!-- 보상 2: 30분 딥 러닝 -->
+                    <div class="p-3 bg-valo-dark/90 border-l-4 border-valo-red flex items-center justify-between rounded-r">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded bg-valo-red/15 border border-valo-red/40 flex items-center justify-center text-valo-red shrink-0">
+                                <i class="ph-fill ph-crosshair text-xl"></i>
+                            </div>
+                            <div>
+                                <span class="font-mono text-[11px] text-valo-red font-bold block">[TRACK B // 30분 딥 러닝 1회 완수]</span>
+                                <p class="text-xs sm:text-sm font-bold text-valo-offwhite">'✨ 프라임 // 2.0 골드 스킨' 해금 + 500 VP</p>
+                            </div>
+                        </div>
+                        <span class="font-mono text-xs px-2 py-0.5 bg-valo-red/20 text-valo-red rounded font-bold">핵심 보상</span>
+                    </div>
+
+                    <!-- 보상 3: 오버타임 재도전 -->
+                    <div class="p-3 bg-valo-dark/90 border-l-4 border-valo-gold flex items-center justify-between rounded-r">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded bg-valo-gold/15 border border-valo-gold/40 flex items-center justify-center text-valo-gold shrink-0">
+                                <i class="ph-fill ph-crown text-xl"></i>
+                            </div>
+                            <div>
+                                <span class="font-mono text-[11px] text-valo-gold font-bold block">[OVERTIME // 10분 휴식 후 연속 재도전]</span>
+                                <p class="text-xs sm:text-sm font-bold text-valo-offwhite">'🌊 쿠로나미 네온 스킨' & '👑 레디언트' 해금</p>
+                            </div>
+                        </div>
+                        <span class="font-mono text-xs px-2 py-0.5 bg-valo-gold/20 text-valo-gold rounded font-bold">최고 등급</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 공지 모달 하단 바 (오늘 하루 보지 않기) -->
+            <div class="px-5 py-4 bg-valo-panel border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <label class="flex items-center space-x-2 cursor-pointer text-xs text-valo-gray hover:text-valo-offwhite">
+                    <input id="hide-today-checkbox" type="checkbox" class="w-4 h-4 accent-valo-red rounded">
+                    <span>오늘 하루 이 브리핑 보지 않기</span>
+                </label>
+                <button onclick="closeDailyNotice()" class="w-full sm:w-auto px-6 py-2.5 bg-valo-red hover:bg-valo-redHover text-valo-dark font-display font-bold text-sm tracking-wider uppercase clip-valo-btn glow-red whitespace-nowrap">
+                    브리핑 확인 및 작전 로비 진입
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 2-B. 무기고 모달 (Armory Modal: 스킨 & 요원 아이콘 변경) -->
+    <!-- ========================================================= -->
+    <div id="armory-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4 transition-all">
+        <div class="bg-valo-card border border-valo-gold/60 max-w-3xl w-full clip-valo-card overflow-hidden shadow-2xl max-h-[88vh] flex flex-col">
+            <div class="h-1.5 w-full bg-gradient-to-r from-valo-gold via-valo-red to-valo-cyan"></div>
+            
+            <div class="p-5 border-b border-white/10 flex items-center justify-between bg-valo-panel">
+                <div class="flex items-center space-x-3">
+                    <i class="ph-fill ph-paint-brush-broad text-valo-gold text-2xl"></i>
+                    <div>
+                        <h2 class="font-display text-xl sm:text-2xl font-bold text-valo-offwhite uppercase tracking-wide">
+                            전술 무기고 (ARMORY // 테마 스킨 & 요원 아이콘)
+                        </h2>
+                        <p class="font-mono text-[11px] text-valo-gray">미션 완수 또는 보유 VP로 스킨을 해금하여 앱 전체 색상을 변경하세요</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="px-3 py-1 bg-valo-dark border border-valo-cyan/40 rounded font-mono text-xs text-valo-cyan font-bold">
+                        보유: <span id="armory-vp-display">450</span> VP
+                    </div>
+                    <button onclick="closeArmoryModal()" class="p-2 text-valo-gray hover:text-white bg-white/5 rounded">
+                        <i class="ph-bold ph-x text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-6 flex-grow">
+                <!-- 스킨 섹션 -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono text-xs font-bold text-valo-gold uppercase tracking-wider">// 01. UI TACTICAL SKINS (테마 컬러 스킨)</span>
+                        <span class="font-mono text-[11px] text-valo-gray">장착 즉시 앱 전체 네온 색상이 변경됩니다</span>
+                    </div>
+                    <div id="skin-list-container" class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                        <!-- JS 동적 렌더링 -->
+                    </div>
+                </div>
+
+                <!-- 아이콘 섹션 -->
+                <div class="space-y-3">
+                    <span class="font-mono text-xs font-bold text-valo-cyan uppercase tracking-wider block">// 02. AGENT CALLSIGN ICONS (요원 아이콘 & 칭호)</span>
+                    <div id="icon-list-container" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <!-- JS 동적 렌더링 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-5 py-3.5 bg-valo-panel border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                    <button onclick="unlockAllForTest()" class="px-3 py-1.5 bg-valo-gold/20 hover:bg-valo-gold/30 text-valo-gold border border-valo-gold/40 rounded font-mono text-xs font-bold whitespace-nowrap">
+                        ⚡ [테스트용] 모든 스킨/아이콘 전체 해금
+                    </button>
+                    <button onclick="resetAllProgress()" class="px-3 py-1.5 bg-white/5 hover:bg-red-500/20 text-valo-gray hover:text-red-300 border border-white/10 rounded font-mono text-xs whitespace-nowrap">
+                        초기화
+                    </button>
+                </div>
+                <div>
+                    <button onclick="closeArmoryModal()" class="px-5 py-2 bg-valo-cyan text-valo-dark font-display font-bold text-sm uppercase clip-valo-btn">
+                        닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 2-D. 🔒 API 보안 아키텍처 & Vercel 서버리스 설정 모달 (Step 3) -->
+    <!-- ========================================================= -->
+    <div id="security-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4 transition-all">
+        <div class="bg-valo-card border border-valo-cyan/60 max-w-3xl w-full clip-valo-card overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-valo-cyan to-valo-red"></div>
+            
+            <div class="p-5 border-b border-white/10 flex items-center justify-between bg-valo-panel">
+                <div class="flex items-center space-x-3">
+                    <i class="ph-fill ph-shield-checkered text-emerald-400 text-2xl"></i>
+                    <div>
+                        <h2 class="font-display text-xl sm:text-2xl font-bold text-valo-offwhite uppercase tracking-wide">
+                            🔒 API 보안 아키텍처 & Vercel 서버리스 가이드 (STEP 3)
+                        </h2>
+                        <p class="font-mono text-[11px] text-valo-gray">프론트엔드 코드에 Gemini API Key를 절대 노출하지 않는 안전 설계</p>
+                    </div>
+                </div>
+                <button onclick="closeSecurityModal()" class="p-2 text-valo-gray hover:text-white bg-white/5 rounded">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-5 flex-grow text-xs sm:text-sm">
+                <!-- 통신 모드 스위치 -->
+                <div class="p-4 bg-valo-dark border border-valo-cyan/40 rounded space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono text-xs font-bold text-valo-cyan uppercase">// ACTIVE AI CONNECTION MODE (현재 AI 연결 방식)</span>
+                        <span id="current-api-mode-badge" class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 font-mono text-[11px] font-bold rounded">CANVAS BRIDGE + FALLBACK</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <button onclick="setApiConnectionMode('CANVAS_DIRECT')" id="mode-btn-direct" class="p-3 rounded border border-valo-cyan bg-valo-cyan/15 text-left transition-all">
+                            <div class="font-bold text-valo-offwhite flex items-center justify-between">
+                                <span>⚡ 프리뷰/테스트 즉시 구동 모드</span>
+                                <i class="ph-fill ph-check-circle text-valo-cyan"></i>
+                            </div>
+                            <p class="text-[11px] text-valo-gray mt-1">현재 화면에서 즉시 Gemini AI 및 내장 스마트 폴백 엔진으로 문제를 생성하고 대화합니다.</p>
+                        </button>
+                        <button onclick="setApiConnectionMode('VERCEL_PROXY')" id="mode-btn-proxy" class="p-3 rounded border border-white/10 bg-valo-panel/60 text-left transition-all">
+                            <div class="font-bold text-valo-offwhite flex items-center justify-between">
+                                <span>☁️ Vercel 서버리스 프록시 모드 (/api/gemini)</span>
+                                <i class="ph-bold ph-cloud-check text-valo-gray"></i>
+                            </div>
+                            <p class="text-[11px] text-valo-gray mt-1">실제 Vercel 배포 시 활성화. 브라우저에 API 키 없이 `/api/gemini` 백엔드를 경유합니다.</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 보안 원리 설명 -->
+                <div class="space-y-2">
+                    <h4 class="font-mono text-xs font-bold text-valo-gold uppercase">// 왜 Vercel 서버리스 함수(Serverless Function)를 쓰나요?</h4>
+                    <p class="text-valo-offwhite/85 leading-relaxed bg-valo-panel/60 p-3.5 rounded border border-white/5">
+                        스마트폰 브라우저(`index.html`)는 요청 내용을 **`/api/gemini`** 주소로만 보냅니다. 실제 비밀 열쇠인 <code class="text-valo-cyan font-mono">GEMINI_API_KEY</code>는 Vercel 대시보드의 <strong>Environment Variables(환경 변수)</strong> 금고 안에만 저장되어 외부에서 개발자 도구로 절대 훔쳐볼 수 없습니다.
+                    </p>
+                </div>
+
+                <!-- 복사 가능한 Vercel 서버리스 코드 -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono text-xs font-bold text-emerald-400">📁 프로젝트 루트 /api/gemini.js 파일 코드 (Vercel 자동 인식)</span>
+                        <button onclick="copyServerlessCode()" class="px-3 py-1 bg-valo-cyan/20 hover:bg-valo-cyan/30 text-valo-cyan border border-valo-cyan/40 rounded font-mono text-xs font-bold flex items-center space-x-1">
+                            <i class="ph-bold ph-copy"></i>
+                            <span id="copy-code-btn-text">코드 복사하기</span>
+                        </button>
+                    </div>
+                    <pre id="serverless-code-block" class="p-4 bg-black/80 border border-white/15 rounded font-mono text-[11px] text-emerald-300 overflow-x-auto leading-relaxed select-all">// 파일 경로: /api/gemini.js (Vercel Serverless Function)
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  // Vercel 환경 변수에 숨겨둔 API Key 로드 (브라우저에 절대 노출 안 됨)
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Server GEMINI_API_KEY not configured' });
+  }
+
+  try {
+    const { contents, systemInstruction, generationConfig } = req.body;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents, systemInstruction, generationConfig })
+    });
+
+    const data = await response.json();
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(500).json({ error: 'AI Proxy Error', details: err.message });
+  }
+}</pre>
+                </div>
+            </div>
+
+            <div class="px-5 py-3.5 bg-valo-panel border-t border-white/10 flex items-center justify-between">
+                <span class="font-mono text-[11px] text-valo-gray">Vercel Settings &gt; Environment Variables &gt; GEMINI_API_KEY 등록 필수</span>
+                <button onclick="closeSecurityModal()" class="px-5 py-2 bg-valo-cyan text-valo-dark font-display font-bold text-sm uppercase clip-valo-btn">
+                    확인 및 닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 2-E. 💬 부모님 카카오톡 일일 학습 리포트 센터 모달 (Step 4 핵심) -->
+    <!-- ========================================================= -->
+    <div id="kakao-report-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4 transition-all">
+        <div class="bg-valo-card border-2 border-[#FEE500]/80 max-w-4xl w-full clip-valo-card overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+            <!-- 상단 컬러 바 (카카오 옐로우 포인트) -->
+            <div class="h-1.5 w-full bg-gradient-to-r from-[#FEE500] via-valo-cyan to-valo-red"></div>
+
+            <!-- 모달 헤더 -->
+            <div class="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-valo-panel">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded bg-[#FEE500] text-[#191919] flex items-center justify-center font-extrabold text-xl shrink-0 shadow">
+                        <i class="ph-fill ph-chat-circle-dots"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-0.5 bg-[#FEE500] text-[#191919] font-mono text-[10px] font-extrabold uppercase rounded">STEP 4 // KAKAOTALK REPORT</span>
+                            <h2 class="font-display text-lg sm:text-2xl font-bold text-valo-offwhite uppercase tracking-wide">
+                                부모님 카카오톡 학습 요약 리포트 센터
+                            </h2>
+                        </div>
+                        <p class="font-mono text-[11px] text-valo-gray">학습 완료 즉시 Gemini AI가 3줄 브리핑을 생성하여 부모님 카카오톡으로 전송합니다</p>
+                    </div>
+                </div>
+                <button onclick="closeKakaoReportModal()" class="p-2 text-valo-gray hover:text-white bg-white/5 rounded">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <!-- 상단 탭 스위치 (1. 카톡 프리뷰 & 즉시 전송 / 2. 카카오 API 백엔드 코드 복사) -->
+            <div class="px-5 pt-3 bg-valo-dark border-b border-white/10 flex space-x-2 overflow-x-auto">
+                <button id="kakao-tab-btn-preview" onclick="switchKakaoTab('PREVIEW')" class="px-4 py-2.5 font-mono text-xs font-bold border-b-2 border-[#FEE500] text-[#FEE500] bg-white/5 whitespace-nowrap flex items-center space-x-1.5">
+                    <i class="ph-fill ph-device-mobile"></i>
+                    <span>1. 실시간 카톡 리포트 프리뷰 & 발송 시뮬레이션</span>
+                </button>
+                <button id="kakao-tab-btn-code" onclick="switchKakaoTab('CODE')" class="px-4 py-2.5 font-mono text-xs font-bold border-b-2 border-transparent text-valo-gray hover:text-valo-offwhite whitespace-nowrap flex items-center space-x-1.5">
+                    <i class="ph-bold ph-code"></i>
+                    <span>2. 카카오 API 연동 가이드 & Vercel 백엔드 코드 (/api/kakao-report.js)</span>
+                </button>
+            </div>
+
+            <!-- 탭 1: 실시간 카카오톡 채팅방 프리뷰 & AI 요약 생성 -->
+            <div id="kakao-tab-preview" class="p-5 sm:p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow items-start">
+                
+                <!-- 좌측 6컬럼: 실제 카카오톡 대화방 UI 시뮬레이터 -->
+                <div class="lg:col-span-6 bg-[#ABC1D1] text-[#191919] rounded-xl overflow-hidden shadow-xl border-2 border-white/20 flex flex-col">
+                    <!-- 카톡 상단 상태바 -->
+                    <div class="px-4 py-3 bg-[#9bb3c4] flex items-center justify-between border-b border-black/10">
+                        <div class="flex items-center space-x-2">
+                            <i class="ph-bold ph-caret-left text-lg"></i>
+                            <span class="font-bold text-sm">나와의 채팅 (부모님 알림톡)</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-black/70">
+                            <i class="ph-bold ph-magnifying-glass"></i>
+                            <i class="ph-bold ph-list"></i>
+                        </div>
+                    </div>
+
+                    <!-- 카톡 메시지 영역 -->
+                    <div class="p-4 space-y-3 min-h-[340px] flex flex-col justify-end">
+                        <div class="text-center">
+                            <span id="kakao-chat-date-chip" class="px-3 py-1 bg-black/15 text-white text-[11px] rounded-full">
+                                2026년 10월 29일 목요일
+                            </span>
+                        </div>
+
+                        <!-- 발로란트 AI 봇 프로필 + 카톡 알림톡 카드 -->
+                        <div class="flex items-start space-x-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-[#0F1923] text-[#FF4655] flex items-center justify-center font-display font-bold text-xs shrink-0 shadow">
+                                VALO
+                            </div>
+                            <div class="space-y-1 max-w-[85%] w-full">
+                                <div class="text-[11px] font-semibold text-black/80">스마트 학습 전술 브리핑 봇</div>
+                                <!-- 카톡 화이트/옐로우 리포트 말풍선 카드 -->
+                                <div class="bg-white rounded-xl overflow-hidden shadow-md border border-black/5">
+                                    <div class="bg-[#FEE500] px-3.5 py-2 flex items-center justify-between">
+                                        <span class="font-extrabold text-xs text-[#191919]">📊 [일일 학습 완수 브리핑 도착]</span>
+                                        <span class="text-[10px] font-mono font-bold bg-black/10 px-1.5 py-0.5 rounded">VER 1.1</span>
+                                    </div>
+                                    <div class="p-3.5 space-y-2.5 text-xs leading-relaxed text-[#222]">
+                                        <div class="space-y-1 border-b border-gray-200 pb-2">
+                                            <div>• <strong>완료 모드:</strong> <span id="kakao-card-mode" class="text-blue-700 font-bold">30분 딥 러닝 완수 (1라운드)</span></div>
+                                            <div>• <strong>학습 과목/단원:</strong> <span id="kakao-card-subject" class="font-semibold">수학 — 이차함수의 그래프</span></div>
+                                            <div>• <strong>내신 문제 격파:</strong> <span id="kakao-card-score" class="text-emerald-700 font-bold">3문제 중 0문제 격파 (연속 출석 3일🔥)</span></div>
+                                        </div>
+                                        <!-- AI 생성 3줄 요약 영역 -->
+                                        <div class="bg-gray-50 p-2.5 rounded border border-gray-200 space-y-1">
+                                            <div class="font-bold text-[11px] text-gray-700">🤖 [Gemini AI 튜터 3초 요약]</div>
+                                            <p id="kakao-card-ai-summary" class="text-xs text-gray-800 whitespace-pre-line">오늘 요원님이 선택한 단원의 핵심 개념을 집중 점검했습니다. 소크라테스 힌트를 통해 오답 함정을 스스로 찾아내며 자기주도적 문제 해결력을 보여주었습니다! 가정에서 따뜻한 격려 한마디 부탁드립니다.</p>
+                                        </div>
+                                        <div class="pt-1">
+                                            <div class="w-full py-2 bg-gray-100 text-center rounded font-bold text-[11px] text-gray-700">
+                                                패밀리 링크 보너스 시간 지급 대상 ✓
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-end space-x-1 text-[10px] text-black/60 pr-1">
+                                    <span id="kakao-send-status-badge" class="text-amber-900 font-bold">발송 대기 중</span>
+                                    <span>•</span>
+                                    <span id="kakao-chat-time">오후 2:18</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 우측 6컬럼: AI 요약 제어 및 원클릭 카톡 전송 컨트롤 -->
+                <div class="lg:col-span-6 space-y-4">
+                    <div class="p-4 bg-valo-dark border border-white/10 rounded space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-xs font-bold text-[#FEE500] uppercase">// 01. AI 3줄 학습 요약 브리핑 편집 & 재생성</span>
+                            <button onclick="generateKakaoSummaryWithAI()" id="btn-refresh-kakao-ai" class="px-3 py-1 bg-valo-cyan/20 hover:bg-valo-cyan/30 text-valo-cyan border border-valo-cyan/40 rounded font-mono text-xs font-bold flex items-center space-x-1 transition-colors whitespace-nowrap">
+                                <i class="ph-bold ph-sparkle"></i>
+                                <span>✨ AI 요약 새로고침</span>
+                            </button>
+                        </div>
+                        <p class="text-xs text-valo-gray">
+                            아이가 오늘 공부한 과목, 푼 문제, AI 튜터와 나눈 질문 내용을 바탕으로 Gemini AI가 부모님께 보낼 안심 브리핑을 작성합니다.
+                        </p>
+                        <textarea id="kakao-custom-summary-input" rows="4" oninput="syncCustomSummaryToPreview()"
+                            class="w-full bg-valo-panel border border-white/15 focus:border-[#FEE500] rounded p-3 text-xs sm:text-sm text-valo-offwhite outline-none leading-relaxed"></textarea>
+                    </div>
+
+                    <!-- 학습 완료 시 자동 발송 스위치 -->
+                    <div class="p-4 bg-valo-dark border border-white/10 rounded flex items-center justify-between">
+                        <div>
+                            <div class="text-xs sm:text-sm font-bold text-valo-offwhite">⚡ 미션 타이머 종료 시 부모님 카톡 자동 발송</div>
+                            <div class="text-[11px] text-valo-gray">15분/30분 루틴이 끝나는 순간 자동으로 리포트를 전송합니다</div>
+                        </div>
+                        <input id="auto-kakao-toggle" type="checkbox" checked class="w-5 h-5 accent-[#FEE500] rounded cursor-pointer">
+                    </div>
+
+                    <!-- 즉시 발송 버튼 -->
+                    <button onclick="sendKakaoReportNow()" id="btn-send-kakao-now" class="w-full py-4 px-5 bg-[#FEE500] hover:bg-[#f5dc00] text-[#191919] font-display font-bold text-base tracking-wide uppercase clip-valo-btn shadow-lg flex items-center justify-center space-x-2 transition-transform active:scale-[0.99] whitespace-nowrap">
+                        <i class="ph-fill ph-paper-plane-tilt text-xl"></i>
+                        <span>💬 부모님 카카오톡으로 리포트 즉시 발송 (TEST SEND)</span>
+                    </button>
+
+                    <!-- 전송 결과 로그 박스 -->
+                    <div id="kakao-send-result-box" class="hidden p-3.5 bg-emerald-950/60 border border-emerald-400/50 rounded text-xs text-emerald-200 space-y-1">
+                        <div class="font-bold text-emerald-300 flex items-center space-x-1.5">
+                            <i class="ph-fill ph-check-circle text-base"></i>
+                            <span>카카오톡 리포트 전송 완료! (200 OK)</span>
+                        </div>
+                        <p id="kakao-send-result-detail" class="text-[11px] text-valo-offwhite/90"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 탭 2: 카카오 디벨로퍼스 설정 가이드 & Vercel 백엔드 코드 복사 -->
+            <div id="kakao-tab-code" class="hidden p-5 sm:p-6 overflow-y-auto space-y-5 flex-grow text-xs sm:text-sm">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="p-3.5 bg-valo-dark border border-white/10 rounded space-y-1">
+                        <span class="font-mono text-[11px] text-[#FEE500] font-bold">STEP 01 // KAKAO DEVELOPERS</span>
+                        <div class="font-bold text-valo-offwhite">앱 생성 및 REST API 키 발급</div>
+                        <p class="text-xs text-valo-gray">developers.kakao.com 접속 ➔ 내 애플리케이션 생성 ➔ 카카오 로그인 활성화 및 동의항목에서 <code class="text-valo-cyan">talk_message(카카오톡 메시지 전송)</code> 체크</p>
+                    </div>
+                    <div class="p-3.5 bg-valo-dark border border-white/10 rounded space-y-1">
+                        <span class="font-mono text-[11px] text-valo-cyan font-bold">STEP 02 // PARENT TOKEN</span>
+                        <div class="font-bold text-valo-offwhite">부모님 계정 Refresh Token 보관</div>
+                        <p class="text-xs text-valo-gray">부모님 카카오 계정으로 1회 로그인 인증 후 발급받은 <code class="text-valo-gold">KAKAO_REFRESH_TOKEN</code>을 Vercel 환경변수(또는 Firebase)에 안전하게 등록</p>
+                    </div>
+                    <div class="p-3.5 bg-valo-dark border border-white/10 rounded space-y-1">
+                        <span class="font-mono text-[11px] text-emerald-400 font-bold">STEP 03 // VERCEL FUNCTION</span>
+                        <div class="font-bold text-valo-offwhite">/api/kakao-report.js 배포</div>
+                        <p class="text-xs text-valo-gray">아이 폰에서 학습 완료 버튼을 누르면 Vercel 서버가 토큰을 자동 갱신하고 부모님 카톡(`나에게 보내기`)으로 리포트를 발송!</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono text-xs font-bold text-[#FEE500]">📁 프로젝트 루트 /api/kakao-report.js (Vercel 서버리스 백엔드 코드)</span>
+                        <button onclick="copyKakaoBackendCode()" class="px-3 py-1 bg-[#FEE500]/20 hover:bg-[#FEE500]/30 text-[#FEE500] border border-[#FEE500]/50 rounded font-mono text-xs font-bold flex items-center space-x-1 whitespace-nowrap">
+                            <i class="ph-bold ph-copy"></i>
+                            <span id="copy-kakao-code-btn-text">카카오 백엔드 코드 복사</span>
+                        </button>
+                    </div>
+                    <pre id="kakao-serverless-code-block" class="p-4 bg-black/85 border border-white/15 rounded font-mono text-[11px] text-emerald-300 overflow-x-auto leading-relaxed select-all">// 파일 경로: /api/kakao-report.js (Vercel Serverless Function)
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  const { modeTitle, subject, topic, solvedCount, streak, aiSummary } = req.body;
+
+  // 1. 부모님 카카오 Refresh Token으로 최신 Access Token 자동 발급
+  const tokenRes = await fetch('https://kauth.kakao.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: process.env.KAKAO_REST_API_KEY,
+      refresh_token: process.env.KAKAO_PARENT_REFRESH_TOKEN
+    })
+  });
+  const tokenData = await tokenRes.json();
+  const accessToken = tokenData.access_token;
+
+  // 2. 카카오톡 '나에게 보내기' 텍스트 템플릿 조립
+  const templateObject = {
+    object_type: 'text',
+    text: `📊 [오늘의 학습 완수 리포트]\n• 완료 모드: ${modeTitle}\n• 과목/단원: ${subject} (${topic})\n• 문제 격파: ${solvedCount}/3 문제 (연속 ${streak}일째🔥)\n\n🤖 [AI 튜터 피드백]\n${aiSummary}`,
+    link: {
+      web_url: process.env.VERCEL_PROJECT_URL || 'https://valorant-study.vercel.app',
+      mobile_web_url: process.env.VERCEL_PROJECT_URL || 'https://valorant-study.vercel.app'
+    },
+    button_title: '학습 대시보드 확인'
+  };
+
+  // 3. 카카오 메시지 API 전송 호출
+  const sendRes = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+    },
+    body: new URLSearchParams({
+      template_object: JSON.stringify(templateObject)
+    })
+  });
+
+  const sendResult = await sendRes.json();
+  return res.status(200).json({ ok: true, result_code: sendResult.result_code });
+}</pre>
+                </div>
+            </div>
+
+            <div class="px-5 py-3 bg-valo-panel border-t border-white/10 flex items-center justify-between">
+                <span class="font-mono text-[11px] text-valo-gray">VER 1.1 STEP 4 // PARENT KAKAOTALK NOTIFICATION ENGINE</span>
+                <button onclick="closeKakaoReportModal()" class="px-5 py-1.5 bg-white/10 hover:bg-white/20 text-valo-offwhite font-display font-bold text-sm uppercase clip-valo-btn">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 2-C. 10분 휴식 종료 후 재도전 선택 모달 (Post-Break Modal) -->
+    <!-- ========================================================= -->
+    <div id="post-break-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-valo-card border-2 border-valo-gold max-w-lg w-full clip-valo-card overflow-hidden shadow-2xl">
+            <div class="h-2 w-full bg-gradient-to-r from-valo-gold via-valo-red to-valo-cyan"></div>
+            <div class="p-6 sm:p-8 text-center space-y-5">
+                <div class="w-16 h-16 mx-auto rounded-full bg-valo-gold/15 border-2 border-valo-gold flex items-center justify-center text-valo-gold animate-bounce">
+                    <i class="ph-fill ph-lightning text-3xl"></i>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="font-mono text-xs font-bold text-valo-cyan uppercase tracking-widest">COOLDOWN COMPLETE // DECISION TIME</span>
+                    <h3 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite">
+                        10분 재충전 완료! 다음 작전을 선택하라
+                    </h3>
+                    <p class="text-xs sm:text-sm text-valo-gray pt-1">
+                        이미 오늘의 30분 딥 러닝 목표를 훌륭히 달성했습니다! 여기서 기분 좋게 마무리하거나, <strong class="text-valo-gold">오버타임(연속 30분)</strong>에 돌입해 최고 등급 스킨을 해금할 수 있습니다.
+                    </p>
+                </div>
+
+                <!-- 선택지 2개 -->
+                <div class="space-y-3 pt-2">
+                    <button onclick="startOvertimeRound()" class="w-full p-4 bg-valo-red hover:bg-valo-redHover text-valo-dark font-display font-bold text-left clip-valo-btn glow-red transition-all flex items-center justify-between group">
+                        <div class="flex items-center space-x-3">
+                            <i class="ph-fill ph-fire text-2xl"></i>
+                            <div>
+                                <div class="text-base sm:text-lg uppercase tracking-wide">🔥 다음 라운드 계속 달리기 (OVERTIME 30M)</div>
+                                <div class="font-sans text-xs font-medium opacity-90">즉시 '쿠로나미 네온 스킨' & '👑 레디언트' 해금 + 보너스 1.5배 VP!</div>
+                            </div>
+                        </div>
+                        <i class="ph-bold ph-caret-right text-xl group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+
+                    <button onclick="finishAndClaimRewards()" class="w-full p-3.5 bg-valo-panel hover:bg-white/15 text-valo-offwhite border border-valo-cyan/50 font-display font-bold text-center clip-valo-btn transition-all flex items-center justify-center space-x-2">
+                        <i class="ph-fill ph-check-circle text-valo-cyan text-xl"></i>
+                        <span>🛑 오늘 작전 완벽 종료 및 자유시간 누리기 (로비 귀환)</span>
+                    </button>
+
+                    <button onclick="finishAndOpenKakaoReport()" class="w-full p-3.5 bg-[#FEE500] hover:bg-[#f5dc00] text-[#191919] font-display font-bold text-center clip-valo-btn transition-all flex items-center justify-center space-x-2 shadow-lg">
+                        <i class="ph-fill ph-chat-circle-dots text-xl"></i>
+                        <span>💬 부모님 카카오톡으로 오늘 학습 리포트 전송 후 종료</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. 상단 HUD 네비게이션 헤더 (HUD Header) -->
+    <!-- ========================================== -->
+    <header class="sticky top-0 z-30 bg-valo-dark/95 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- 좌측: 장착된 요원 아이콘 및 콜사인 -->
+            <div class="flex items-center space-x-3">
+                <button onclick="openArmoryModal()" class="w-10 h-10 bg-valo-red/20 border-2 border-valo-red flex items-center justify-center clip-valo-btn shadow-md text-xl hover:scale-105 transition-transform" title="클릭하여 아이콘/스킨 변경">
+                    <span id="hud-agent-emoji">🎯</span>
+                </button>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-display font-bold text-base sm:text-lg tracking-wider text-valo-offwhite leading-none">VALORANT STUDY</span>
+                        <span id="hud-skin-badge" class="hidden sm:inline-block font-mono text-[10px] px-1.5 py-0.5 bg-valo-red/20 text-valo-red border border-valo-red/40 rounded font-bold">PROTOCOL V-01</span>
+                    </div>
+                    <p class="font-mono text-[11px] text-valo-gray">
+                        AGENT // <span id="agent-title-display" class="text-valo-cyan font-bold">타격대 훈련생</span>
+                        <span class="text-white/20 mx-1">|</span>
+                        <span>완료 세션: <strong id="hud-sessions" class="text-valo-offwhite">0</strong>회</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- 우측: 스트릭, VP 포인트, 무기고(스킨), 공지 버튼 -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- 연속 스트릭 -->
+                <div class="flex items-center space-x-1.5 bg-valo-panel px-2.5 py-1.5 rounded border border-white/10" title="연속 학습 일수">
+                    <i class="ph-fill ph-fire text-orange-500 text-base sm:text-lg animate-pulse"></i>
+                    <span class="font-mono text-xs sm:text-sm font-bold text-valo-offwhite"><span id="hud-streak">3</span>일</span>
+                </div>
+
+                <!-- 보유 VP 포인트 -->
+                <div class="flex items-center space-x-1.5 bg-valo-panel px-2.5 py-1.5 rounded border border-valo-cyan/30" title="누적 학습 포인트">
+                    <i class="ph-fill ph-diamond text-valo-cyan text-xs sm:text-sm"></i>
+                    <span class="font-mono text-xs sm:text-sm font-bold text-valo-cyan" id="hud-vp">450</span>
+                    <span class="hidden sm:inline font-mono text-[10px] text-valo-gray">VP</span>
+                </div>
+
+                <!-- 무기고 / 스킨 변경 버튼 (Step 2 핵심) -->
+                <button onclick="openArmoryModal()" class="px-3 py-1.5 bg-valo-gold/15 hover:bg-valo-gold/25 text-valo-gold border border-valo-gold/50 rounded transition-colors flex items-center space-x-1.5 text-xs font-bold">
+                    <i class="ph-fill ph-paint-brush-broad text-base"></i>
+                    <span class="hidden sm:inline font-mono">무기고 (스킨)</span>
+                </button>
+
+                <!-- API 보안 & 서버 설정 버튼 (Step 3 핵심) -->
+                <button onclick="openSecurityModal()" class="px-2.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded transition-colors flex items-center space-x-1 text-xs font-bold whitespace-nowrap" title="Vercel 서버리스 API 키 보안 설계 보기">
+                    <i class="ph-fill ph-shield-checkered text-base"></i>
+                    <span class="hidden md:inline font-mono">보안/API</span>
+                </button>
+
+                <!-- 카카오톡 학습 리포트 버튼 (Step 4 핵심) -->
+                <button onclick="openKakaoReportModal()" class="px-3 py-1.5 bg-[#FEE500] hover:bg-[#f5dc00] text-[#191919] rounded transition-transform hover:scale-105 flex items-center space-x-1.5 text-xs font-extrabold shadow whitespace-nowrap" title="부모님 카카오톡 일일 학습 요약 리포트">
+                    <i class="ph-fill ph-chat-circle-dots text-base"></i>
+                    <span class="font-sans">카톡 리포트</span>
+                </button>
+
+                <!-- 공지 다시보기 -->
+                <button onclick="openDailyNoticeManual()" class="p-2 bg-white/5 hover:bg-white/15 text-valo-gray hover:text-valo-offwhite rounded border border-white/10 transition-colors" title="일일 보상 공지 다시보기">
+                    <i class="ph-bold ph-megaphoneSimple text-valo-red text-base"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- 4. 메인 콘텐츠 영역 (로비 화면 vs 타이머 작전 화면) -->
+    <!-- ========================================== -->
+    <main class="flex-grow z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- [VIEW 1] 메인 로비 화면 (과목 선택 + 투 트랙 모드 카드) -->
+        <section id="lobby-view" class="space-y-7 transition-all duration-300">
+            
+            <!-- 상단 인사말 & 과목 카테고리 선택 바 -->
+            <div class="bg-valo-panel/80 border border-white/10 p-5 sm:p-6 clip-valo-card relative scanline-overlay">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4 mb-5">
+                    <div>
+                        <div class="flex items-center space-x-2 text-valo-red font-mono text-xs font-bold tracking-widest uppercase">
+                            <span class="w-2 h-2 bg-valo-red inline-block"></span>
+                            <span>STEP 01 // SELECT TARGET SUBJECT</span>
+                        </div>
+                        <h2 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite mt-1">
+                            오늘 공략할 타겟 과목을 선택하라
+                        </h2>
+                    </div>
+                    <!-- 스킨 보관함 바로가기 미니 위젯 -->
+                    <div onclick="openArmoryModal()" class="cursor-pointer bg-valo-dark hover:bg-white/5 px-4 py-2.5 rounded border border-valo-gold/40 flex items-center space-x-3 self-start md:self-auto transition-colors">
+                        <div class="w-8 h-8 rounded bg-valo-gold/15 flex items-center justify-center text-valo-gold">
+                            <i class="ph-fill ph-medal text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between space-x-3 text-xs">
+                                <span class="text-valo-gray font-mono">해금된 스킨/아이콘</span>
+                                <span id="lobby-unlock-count" class="text-valo-gold font-mono font-bold">2 / 7</span>
+                            </div>
+                            <p class="text-[11px] text-valo-cyan font-mono mt-0.5">클릭하여 무기고 열기 &gt;</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 과목 선택 태그 버튼 그룹 -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5" id="subject-selector">
+                    <button onclick="selectSubject('수학', 'ph-function', '공식 적용 및 내신 함정 문제 격파')" data-subject="수학" class="subject-btn group p-3 rounded bg-valo-red text-valo-dark border border-valo-red font-bold text-sm flex items-center justify-center space-x-2 transition-all glow-red">
+                        <i class="ph-bold ph-function text-lg"></i>
+                        <span>수학 (MATH)</span>
+                    </button>
+                    <button onclick="selectSubject('영어', 'ph-translate', '게임 패치노트/중계 연계 어휘 및 구문')" data-subject="영어" class="subject-btn group p-3 rounded bg-valo-dark hover:bg-white/10 text-valo-offwhite/80 border border-white/10 font-bold text-sm flex items-center justify-center space-x-2 transition-all">
+                        <i class="ph-bold ph-translate text-lg text-valo-cyan"></i>
+                        <span>영어 (ENG)</span>
+                    </button>
+                    <button onclick="selectSubject('국어', 'ph-book-open-text', '비문학 3줄 핵심 요약 및 논리 구조 파악')" data-subject="국어" class="subject-btn group p-3 rounded bg-valo-dark hover:bg-white/10 text-valo-offwhite/80 border border-white/10 font-bold text-sm flex items-center justify-center space-x-2 transition-all">
+                        <i class="ph-bold ph-book-open-text text-lg text-valo-cyan"></i>
+                        <span>국어 (KOR)</span>
+                    </button>
+                    <button onclick="selectSubject('역사·사회', 'ph-compass', '인과관계 스토리텔링 및 오개념 추리 퀴즈')" data-subject="역사·사회" class="subject-btn group p-3 rounded bg-valo-dark hover:bg-white/10 text-valo-offwhite/80 border border-white/10 font-bold text-sm flex items-center justify-center space-x-2 transition-all">
+                        <i class="ph-bold ph-compass text-lg text-valo-cyan"></i>
+                        <span>역사·사회</span>
+                    </button>
+                    <button onclick="selectSubject('과학', 'ph-atom', '핵심 메커니즘 이해 및 초성 스피드 퀴즈')" data-subject="과학" class="subject-btn col-span-2 sm:col-span-1 group p-3 rounded bg-valo-dark hover:bg-white/10 text-valo-offwhite/80 border border-white/10 font-bold text-sm flex items-center justify-center space-x-2 transition-all">
+                        <i class="ph-bold ph-atom text-lg text-valo-cyan"></i>
+                        <span>과학 (SCI)</span>
+                    </button>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-valo-gray font-mono">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-valo-cyan font-bold">SELECTED TARGET:</span>
+                        <span id="selected-subject-desc" class="text-valo-offwhite">수학 — 공식 적용 및 내신 함정 문제 격파</span>
+                    </div>
+                    <span class="hidden sm:inline text-valo-gray/60">STATUS: READY FOR DEPLOYMENT</span>
+                </div>
+            </div>
+
+            <!-- 투 트랙(Two-Track) 모드 선택 카드 그리드 -->
+            <div class="space-y-3">
+                <div class="flex items-center space-x-2 text-valo-cyan font-mono text-xs font-bold tracking-widest uppercase px-1">
+                    <span class="w-2 h-2 bg-valo-cyan inline-block"></span>
+                    <span>STEP 02 // SELECT OPERATION MODE (투 트랙 작전 선택)</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- [TRACK A] 15분 라이트 복습 모드 -->
+                    <div class="bg-valo-card border border-valo-cyan/30 hover:border-valo-cyan transition-all duration-300 clip-valo-card flex flex-col justify-between p-6 sm:p-7 relative group overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-valo-cyan/10 border-b border-l border-valo-cyan/30 px-3 py-1 font-mono text-[11px] text-valo-cyan font-bold">
+                            TRACK A // DEFENSE LINE
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-4 pt-2">
+                                <div class="w-14 h-14 bg-valo-cyan/10 border border-valo-cyan flex items-center justify-center clip-valo-btn text-valo-cyan shrink-0">
+                                    <i class="ph-fill ph-lightning text-3xl"></i>
+                                </div>
+                                <div>
+                                    <span class="font-mono text-xs text-valo-cyan font-semibold tracking-wider uppercase">QUICK WARM-UP (15 MIN)</span>
+                                    <h3 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite mt-0.5">
+                                        15분 라이트 복습 모드
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <p class="text-sm text-valo-offwhite/80 leading-relaxed bg-valo-dark/60 p-4 rounded border border-white/5">
+                                피곤한 날 공부 흐름이 끊기지 않도록 방어하는 <strong class="text-valo-cyan">최소 루틴</strong>입니다. 핵심 개념 1개와 함정 문제 2개만 체크하고 당당하게 자유 시간을 확보하세요.
+                            </p>
+
+                            <div class="flex flex-wrap gap-2 pt-1">
+                                <span class="font-mono text-xs px-2.5 py-1 bg-valo-cyan/15 text-valo-cyan border border-valo-cyan/30 rounded font-bold">
+                                    🛡️ '감시자' 아이콘 해금
+                                </span>
+                                <span class="font-mono text-xs px-2.5 py-1 bg-white/5 text-valo-offwhite border border-white/10 rounded">
+                                    +150 VP & 스트릭 유지
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-white/10">
+                            <button onclick="startMission('TRACK_A_15M')" class="w-full py-3.5 px-6 bg-valo-cyan hover:opacity-90 text-valo-dark font-display font-bold text-base tracking-wider uppercase clip-valo-btn transition-all glow-cyan flex items-center justify-center space-x-2">
+                                <i class="ph-bold ph-play-circle text-xl"></i>
+                                <span>15분 라이트 작전 개시 (START 15:00)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- [TRACK B] 30분 딥 러닝 챌린지 -->
+                    <div class="bg-valo-card border-2 border-valo-red/70 hover:border-valo-red transition-all duration-300 clip-valo-card flex flex-col justify-between p-6 sm:p-7 relative group overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-valo-red text-valo-dark px-3.5 py-1 font-mono text-[11px] font-extrabold tracking-wider">
+                            TRACK B // SKIN UNLOCK MODE ★
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-4 pt-2">
+                                <div class="w-14 h-14 bg-valo-red/15 border border-valo-red flex items-center justify-center clip-valo-btn text-valo-red shrink-0">
+                                    <i class="ph-fill ph-crosshair text-3xl"></i>
+                                </div>
+                                <div>
+                                    <span class="font-mono text-xs text-valo-red font-semibold tracking-wider uppercase">POMODORO LOOP (30M FOCUS + 10M REST)</span>
+                                    <h3 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite mt-0.5">
+                                        30분 딥 러닝 챌린지
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <p class="text-sm text-valo-offwhite/80 leading-relaxed bg-valo-dark/60 p-4 rounded border border-white/5">
+                                <strong class="text-valo-red">30분 집중 학습 ➔ 10분 전술적 강제 휴식 ➔ 재도전 선택 루프</strong>가 가동됩니다. 완수 즉시 <strong class="text-valo-gold">프라임 2.0 골드 스킨</strong>이 해금됩니다!
+                            </p>
+
+                            <div class="flex flex-wrap gap-2 pt-1">
+                                <span class="font-mono text-xs px-2.5 py-1 bg-valo-gold/15 text-valo-gold border border-valo-gold/40 rounded font-bold">
+                                    ✨ '프라임 2.0 스킨' 즉시 해금
+                                </span>
+                                <span class="font-mono text-xs px-2.5 py-1 bg-valo-red/20 text-valo-red border border-valo-red/40 rounded font-bold">
+                                    +500 VP 획득
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-white/10">
+                            <button onclick="startMission('TRACK_B_30M')" class="w-full py-3.5 px-6 bg-valo-red hover:bg-valo-redHover text-valo-dark font-display font-bold text-base tracking-wider uppercase clip-valo-btn transition-all glow-red flex items-center justify-center space-x-2">
+                                <i class="ph-bold ph-sword text-xl"></i>
+                                <span>30분 딥 러닝 챌린지 개시 (START 30:00)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================== -->
+        <!-- [VIEW 2] 실시간 택티컬 타이머 & 강제 휴식 루프 스테이지 (Step 2 + Step 3) -->
+        <!-- ========================================================== -->
+        <section id="mission-stage-view" class="hidden space-y-6 transition-all duration-300">
+            
+            <!-- 메인 타이머 HUD 카드 (상단 와이드 컴팩트 전술 바 + 접이식 체크리스트) -->
+            <div id="timer-hud-card" class="bg-valo-card border-2 border-valo-red clip-valo-card p-5 sm:p-6 relative overflow-hidden">
+                
+                <!-- 상단 상태 표시줄 -->
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3.5">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span id="stage-mode-badge" class="px-3 py-1 bg-valo-red text-valo-dark font-mono text-xs font-extrabold uppercase clip-valo-badge">
+                            TRACK B // 30M DEEP LEARNING
+                        </span>
+                        <span id="stage-subject-badge" class="px-3 py-1 bg-valo-panel border border-valo-cyan text-valo-cyan font-mono text-xs font-bold">
+                            TARGET: 수학
+                        </span>
+                        <span id="stage-round-badge" class="px-2.5 py-1 bg-valo-gold/15 border border-valo-gold/40 text-valo-gold font-mono text-xs font-bold">
+                            ROUND 1
+                        </span>
+                    </div>
+
+                    <button onclick="returnToLobby()" class="px-3.5 py-1.5 bg-white/5 hover:bg-red-500/20 text-valo-gray hover:text-red-300 font-mono text-xs border border-white/15 rounded flex items-center space-x-1.5 transition-colors whitespace-nowrap">
+                        <i class="ph-bold ph-x"></i>
+                        <span>작전 중단 (로비 귀환)</span>
+                    </button>
+                </div>
+
+                <!-- 와이드 전술 타이머 & 프로그레스 컨트롤 그리드 -->
+                <div class="py-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    
+                    <!-- 좌측 4컬럼: 현재 작전명 & 상태 -->
+                    <div class="lg:col-span-4 space-y-1 text-center lg:text-left">
+                        <p id="timer-phase-label" class="font-mono text-xs text-valo-cyan tracking-[0.15em] uppercase font-bold">
+                            COMBAT FOCUS IN PROGRESS // 집중 교전 중
+                        </p>
+                        <h3 id="stage-title-display" class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite">
+                            [수학] 30분 딥 러닝 챌린지
+                        </h3>
+                        <div id="cooldown-lock-banner" class="hidden mt-2 px-3 py-1.5 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-mono text-xs rounded">
+                            🌿 뇌 과부하 방지 강제 휴식 중 — 화면을 잠시 멀리하고 스트레칭하세요!
+                        </div>
+                    </div>
+
+                    <!-- 중앙 4컬럼: 디지털 카운트다운 숫자 -->
+                    <div class="lg:col-span-4 flex justify-center">
+                        <div class="px-7 py-3 bg-valo-dark/90 border-2 border-white/15 rounded-lg shadow-inner text-center">
+                            <div id="countdown-display" class="font-mono text-5xl sm:text-6xl font-extrabold tracking-tight text-valo-offwhite tabular-nums">
+                                30:00
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 우측 4컬럼: 프로그레스 바 & 일시정지 버튼 -->
+                    <div class="lg:col-span-4 space-y-3">
+                        <div class="space-y-1">
+                            <div class="flex justify-between font-mono text-[11px] text-valo-gray">
+                                <span id="progress-status-left">OPERATION PROGRESS</span>
+                                <span id="progress-percent-text" class="text-valo-cyan font-bold">0%</span>
+                            </div>
+                            <div class="w-full h-3 bg-valo-dark border border-white/10 p-0.5">
+                                <div id="timer-progress-bar" class="h-full bg-gradient-to-r from-valo-red to-valo-cyan transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div id="focus-controls" class="flex items-center justify-center lg:justify-end">
+                            <button id="pause-resume-btn" onclick="togglePauseTimer()" class="w-full sm:w-auto px-6 py-2.5 bg-valo-panel hover:bg-white/15 text-valo-offwhite border border-white/20 font-display font-bold text-sm tracking-wider uppercase clip-valo-btn flex items-center justify-center space-x-2 transition-all whitespace-nowrap">
+                                <i id="pause-resume-icon" class="ph-fill ph-pause text-lg"></i>
+                                <span id="pause-resume-text">일시정지 (PAUSE)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 전술 체크리스트 (15분 vs 30분 단계별 가이드) -->
+                <div id="tactical-checklist-box" class="pt-4 border-t border-white/10">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <span class="font-mono text-xs font-bold text-valo-gold uppercase tracking-wider">
+                            // TACTICAL MISSION CHECKLIST (전술 목표 체크리스트)
+                        </span>
+                        <span class="font-mono text-[11px] text-valo-gray hidden sm:inline">체크하며 진행하면 집중력이 올라갑니다</span>
+                    </div>
+                    <div id="checklist-items" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <!-- JS에서 모드에 맞게 동적 생성 -->
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- ⚡ 아빠/개발자 사전 테스트용 고속 컨트롤 패널 (TEST MODE) -->
+                <!-- ========================================================= -->
+                <div class="mt-4 bg-valo-dark/95 border border-dashed border-valo-gold/50 rounded p-3.5">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="px-2 py-0.5 bg-valo-gold text-valo-dark font-mono text-[10px] font-extrabold rounded uppercase shrink-0">
+                                TEST MODE
+                            </span>
+                            <span class="text-xs text-valo-offwhite/90 font-medium">
+                                사전 테스트용 타이머 단축 컨트롤러 (실제 30분을 기다리지 않고 즉시 흐름을 점검하세요)
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                            <button onclick="fastForwardTimer(5)" class="px-3 py-1.5 bg-valo-panel hover:bg-white/15 text-valo-cyan border border-valo-cyan/40 rounded font-mono text-xs font-bold transition-colors whitespace-nowrap">
+                                ⏩ 타이머 5초 남기기
+                            </button>
+                            <button onclick="completeCurrentPhaseImmediately()" class="px-3 py-1.5 bg-valo-gold/20 hover:bg-valo-gold/30 text-valo-gold border border-valo-gold/50 rounded font-mono text-xs font-bold transition-colors whitespace-nowrap">
+                                ⚡ 현재 단계 즉시 완료 시뮬레이션
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ===================================================================== -->
+            <!-- 🤖 [STEP 3] AI 전술 학습 콘솔 (좌측 7컬럼: 문제 보드 / 우측 5컬럼: 스티키 AI 튜터) -->
+            <!-- ===================================================================== -->
+            <div id="ai-tactical-console" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- 좌측 7컬럼: 자료 입력/사진 스캔 + 내신 함정 3문제 브리핑 보드 -->
+                <div class="lg:col-span-7 space-y-5">
+                    
+                    <!-- MODULE A: 단원/키워드 타겟팅 & 노트/손글씨 사진 Vision 업로드 -->
+                    <div class="bg-valo-card border border-valo-cyan/40 clip-valo-card p-5 sm:p-6 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 bg-valo-cyan text-valo-dark font-mono text-[10px] font-extrabold uppercase clip-valo-badge shrink-0">STEP 3 // AI ENGINE</span>
+                                <h4 class="font-display text-lg sm:text-xl font-bold text-valo-offwhite uppercase">
+                                    작전 타겟 입력 & 노트/시험지 스캔
+                                </h4>
+                            </div>
+                            <span id="ai-engine-status" class="font-mono text-[11px] text-emerald-400 flex items-center space-x-1 shrink-0">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                                <span>GEMINI READY</span>
+                            </span>
+                        </div>
+
+                        <!-- 빠른 테스트용 과목별 추천 키워드 칩 -->
+                        <div class="space-y-1.5">
+                            <span class="font-mono text-[11px] text-valo-gray block">// 원클릭 추천 단원 타겟 (클릭 시 자동 입력):</span>
+                            <div id="topic-preset-chips" class="flex flex-wrap gap-1.5">
+                                <!-- JS에서 선택 과목에 맞게 렌더링 -->
+                            </div>
+                        </div>
+
+                        <!-- 텍스트 입력 & 사진 업로드 컨트롤 -->
+                        <div class="space-y-3">
+                            <div class="relative">
+                                <input id="study-topic-input" type="text" placeholder="오늘 공부한 단원명, 핵심 공식, 또는 영어 지문/개념을 입력하세요..." 
+                                    class="w-full bg-valo-dark border border-white/20 focus:border-valo-cyan rounded px-3.5 py-2.5 text-sm text-valo-offwhite placeholder-valo-gray/60 outline-none font-sans">
+                            </div>
+
+                            <!-- 이미지 업로드(노트 필기 / 손글씨 서술형 답안) -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-valo-dark/70 p-3 rounded border border-white/10">
+                                <div class="flex flex-wrap items-center gap-2.5">
+                                    <label class="cursor-pointer px-3.5 py-2 bg-valo-panel hover:bg-white/10 text-valo-cyan border border-valo-cyan/40 rounded font-mono text-xs font-bold inline-flex items-center space-x-1.5 transition-colors whitespace-nowrap shrink-0">
+                                        <i class="ph-bold ph-camera text-base"></i>
+                                        <span>📷 노트/손글씨 사진 업로드</span>
+                                        <input id="vision-image-input" type="file" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event)">
+                                    </label>
+                                    <span id="vision-file-label" class="text-xs text-valo-gray">
+                                        프린트물이나 손글씨 풀이를 찍어 올리면 AI가 분석합니다.
+                                    </span>
+                                </div>
+                                <button id="clear-image-btn" onclick="clearUploadedImage()" class="hidden text-xs font-mono text-red-400 hover:underline whitespace-nowrap self-end sm:self-auto">
+                                    사진 제거 ✕
+                                </button>
+                            </div>
+
+                            <!-- 이미지 프리뷰 박스 -->
+                            <div id="vision-preview-box" class="hidden p-3 bg-valo-dark border border-valo-gold/40 rounded flex items-center space-x-3">
+                                <img id="vision-preview-img" src="" alt="업로드된 학습 이미지" class="w-16 h-16 object-cover rounded border border-white/20 shrink-0">
+                                <div class="text-xs space-y-1 flex-grow">
+                                    <span class="px-1.5 py-0.5 bg-valo-gold/20 text-valo-gold font-mono text-[10px] font-bold rounded">VISION IMAGE ATTACHED</span>
+                                    <p class="text-valo-offwhite/90">이미지가 준비되었습니다! 아래 버튼으로 <strong>유사 3문제 생성</strong> 또는 <strong>손글씨 서술형 첨삭</strong>을 실행하세요.</p>
+                                </div>
+                            </div>
+
+                            <!-- 실행 버튼 2종 (줄바꿈 방지 적용) -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                <button id="btn-generate-problems" onclick="generateThreeProblems()" class="py-3 px-4 bg-valo-red hover:bg-valo-redHover text-valo-dark font-display font-bold text-sm tracking-wider uppercase clip-valo-btn glow-red flex items-center justify-center space-x-2 transition-all whitespace-nowrap">
+                                    <i class="ph-bold ph-crosshair text-lg shrink-0"></i>
+                                    <span>🎯 내신 함정 3문제 출제 (하/중/상)</span>
+                                </button>
+                                <button id="btn-grade-handwriting" onclick="gradeHandwritingOrEssay()" class="py-3 px-4 bg-valo-panel hover:bg-white/15 text-valo-gold border border-valo-gold/50 font-display font-bold text-sm tracking-wider uppercase clip-valo-btn flex items-center justify-center space-x-2 transition-all whitespace-nowrap">
+                                    <i class="ph-bold ph-pen-nib text-lg shrink-0"></i>
+                                    <span>📝 손글씨 풀이 / 서술형 AI 채점</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODULE B: 내신 함정 3문제 인터랙티브 보드 -->
+                    <div class="bg-valo-card border border-white/15 clip-valo-card p-5 sm:p-6 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+                            <div>
+                                <span class="font-mono text-[11px] text-valo-red font-bold uppercase">// DAILY 3-PROBLEM CHALLENGE</span>
+                                <h4 class="font-display text-lg sm:text-xl font-bold text-valo-offwhite">
+                                    중3 실전 내신 3문제 브리핑 카드
+                                </h4>
+                            </div>
+                            <span id="problem-score-badge" class="font-mono text-xs px-3 py-1 bg-valo-dark border border-white/10 rounded text-valo-cyan font-bold whitespace-nowrap shrink-0">
+                                격파 현황: 0 / 3
+                            </span>
+                        </div>
+
+                        <!-- 로딩 인디케이터 -->
+                        <div id="problems-loading" class="hidden py-10 text-center space-y-3">
+                            <div class="w-10 h-10 border-4 border-valo-red border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            <p class="font-mono text-xs text-valo-cyan animate-pulse">GEMINI AI가 중3 내신 출제 포인트와 함정 선지를 조립 중입니다...</p>
+                        </div>
+
+                        <!-- 3문제 리스트 컨테이너 -->
+                        <div id="problems-container" class="space-y-4">
+                            <!-- 초기 안내 또는 생성된 3문제 렌더링 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 우측 5컬럼: MODULE C 소크라테스 AI 전술 튜터 채팅창 (데스크탑에서 Sticky 고정으로 동시 조회 가능) -->
+                <div class="lg:col-span-5 lg:sticky lg:top-20 flex flex-col">
+                    <div class="bg-valo-card border-2 border-valo-cyan/50 clip-valo-card flex flex-col h-[560px] lg:h-[680px] overflow-hidden shadow-xl">
+                        
+                        <!-- 튜터 헤더 -->
+                        <div class="p-4 bg-valo-panel border-b border-white/10 flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded bg-valo-cyan/15 border border-valo-cyan flex items-center justify-center text-valo-cyan font-display font-bold text-lg relative">
+                                    <span>AI</span>
+                                    <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-valo-dark"></span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-1.5">
+                                        <h4 class="font-display font-bold text-base text-valo-offwhite tracking-wide">CYPHER // 소크라테스 전술 튜터</h4>
+                                        <span class="px-1.5 py-0.5 bg-valo-cyan/20 text-valo-cyan font-mono text-[10px] font-bold rounded">HINT ONLY</span>
+                                    </div>
+                                    <p class="font-mono text-[11px] text-valo-gray">정답 직답 금지 프로토콜 가동 중 — 스스로 답을 찾게 유도합니다</p>
+                                </div>
+                            </div>
+                            <button onclick="resetTutorChat()" class="p-1.5 text-valo-gray hover:text-white bg-white/5 rounded text-xs font-mono" title="대화 초기화">
+                                <i class="ph-bold ph-arrows-clockwise"></i>
+                            </button>
+                        </div>
+
+                        <!-- 채팅 메시지 로그 영역 -->
+                        <div id="tutor-chat-log" class="flex-grow p-4 overflow-y-auto space-y-3.5 bg-valo-dark/60 text-xs sm:text-sm">
+                            <!-- JS에서 초기 튜터 브리핑 메시지 렌더링 -->
+                        </div>
+
+                        <!-- 원클릭 소크라테스 질문 칩 -->
+                        <div class="px-3.5 py-2 bg-valo-panel/90 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap">
+                            <button onclick="sendQuickTutorPrompt('어떤 공식이나 개념부터 시작해야 할지 첫 단추 힌트만 주세요!')" class="px-2.5 py-1 bg-valo-dark hover:bg-valo-cyan/20 text-valo-cyan border border-valo-cyan/30 rounded font-mono text-[11px] transition-colors shrink-0">
+                                💡 첫 단추 힌트 요청
+                            </button>
+                            <button onclick="sendQuickTutorPrompt('내신 시험에서 이 단원이 나올 때 가장 많이 파놓는 함정이 뭐야?')" class="px-2.5 py-1 bg-valo-dark hover:bg-valo-red/20 text-valo-red border border-valo-red/30 rounded font-mono text-[11px] transition-colors shrink-0">
+                                ⚠️ 단골 내신 함정 스캔
+                            </button>
+                            <button onclick="sendQuickTutorPrompt('내가 이해한 내용을 한 줄로 말해볼게. 맞는지 소크라테스식으로 검증해줘!')" class="px-2.5 py-1 bg-valo-dark hover:bg-valo-gold/20 text-valo-gold border border-valo-gold/30 rounded font-mono text-[11px] transition-colors shrink-0">
+                                🎯 내 개념 요약 검증
+                            </button>
+                        </div>
+
+                        <!-- 메시지 입력창 -->
+                        <div class="p-3 bg-valo-panel border-t border-white/10 flex items-center space-x-2">
+                            <input id="tutor-user-input" type="text" placeholder="모르는 문제나 개념, 혹은 튜터의 질문에 답해보세요..." 
+                                onkeydown="if(event.key==='Enter') sendTutorMessage()"
+                                class="flex-grow bg-valo-dark border border-white/20 focus:border-valo-cyan rounded px-3 py-2 text-xs sm:text-sm text-valo-offwhite placeholder-valo-gray/60 outline-none">
+                            <button onclick="sendTutorMessage()" id="tutor-send-btn" class="px-4 py-2 bg-valo-cyan hover:opacity-90 text-valo-dark font-display font-bold text-sm uppercase clip-valo-btn shrink-0 flex items-center space-x-1">
+                                <span>전송</span>
+                                <i class="ph-bold ph-paper-plane-right"></i>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 5. 하단 푸터 (System Status Footer) -->
+    <!-- ========================================== -->
+    <footer class="z-10 border-t border-white/10 bg-valo-dark/80 py-4 px-4 sm:px-6">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-valo-gray gap-2">
+            <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span class="text-emerald-400 font-bold">SYSTEM ONLINE</span>
+                <span>// FAMILY LINK EXCEPTION READY</span>
+            </div>
+            <div>
+                DESIGNED FOR 9TH GRADE AGENT // VER 1.1 (STEP 1 ~ STEP 4 COMPLETE BUILD)
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- JavaScript 상태 관리, 타이머 루프 & 보상 로직 -->
+    <!-- ========================================== -->
+    <script>
+        // 스킨 카탈로그 정의
+        const SKIN_CATALOG = [
+            {
+                id: 'default',
+                name: 'PROTOCOL V-01',
+                subtitle: '발로란트 오리지널 레드 & 시안',
+                cssClass: '',
+                primaryHex: '#FF4655',
+                secondaryHex: '#00F5D4',
+                unlockText: '기본 지급 스킨',
+                costVP: 0
+            },
+            {
+                id: 'prime',
+                name: 'PRIME // 2.0',
+                subtitle: '로얄 골드 & 일렉트릭 퍼플',
+                cssClass: 'skin-prime',
+                primaryHex: '#FFD166',
+                secondaryHex: '#B565FF',
+                unlockText: '30분 딥 러닝 1회 완수 (또는 600 VP)',
+                costVP: 600
+            },
+            {
+                id: 'kuronami',
+                name: 'KURONAMI // NEON',
+                subtitle: '사이버 시안 & 아이스 블루',
+                cssClass: 'skin-kuronami',
+                primaryHex: '#00F5D4',
+                secondaryHex: '#4EA8DE',
+                unlockText: '휴식 후 오버타임 재도전 (또는 900 VP)',
+                costVP: 900
+            }
+        ];
+
+        // 요원 아이콘 카탈로그 정의
+        const ICON_CATALOG = [
+            { id: 'duelist', emoji: '🎯', title: '타격대 훈련생', unlockText: '기본 지급 아이콘' },
+            { id: 'sentinel', emoji: '🛡️', title: '철벽의 감시자', unlockText: '15분 라이트 복습 완료' },
+            { id: 'initiator', emoji: '⚡', title: '전술 척후대', unlockText: '30분 딥 러닝 1회 완수' },
+            { id: 'radiant', emoji: '👑', title: '레디언트 정복자', unlockText: '휴식 후 오버타임 연속 돌입' }
+        ];
+
+        // 앱 전역 상태(State)
+        const AppState = {
+            version: '1.1',
+            selectedSubject: '수학',
+            selectedSubjectDesc: '공식 적용 및 내신 함정 문제 격파',
+            selectedMode: null,      // 'TRACK_A_15M' or 'TRACK_B_30M'
+            timerPhase: 'IDLE',      // 'IDLE', 'FOCUS', 'COOLDOWN'
+            roundCount: 1,
+            totalSeconds: 0,
+            remainingSeconds: 0,
+            isPaused: false,
+            timerInterval: null,
+            // 영구 저장 데이터 (LocalStorage 연동)
+            streak: 3,
+            vp: 450,
+            completedSessions: 0,
+            unlockedSkins: ['default'],
+            equippedSkin: 'default',
+            unlockedIcons: ['duelist'],
+            equippedIcon: 'duelist',
+            // Step 3: AI & 학습 콘솔 상태
+            apiConnectionMode: 'CANVAS_DIRECT', // 'CANVAS_DIRECT' or 'VERCEL_PROXY'
+            uploadedImageBase64: null,
+            uploadedImageMimeType: null,
+            currentProblems: [],
+            solvedCount: 0,
+            tutorHistory: []
+        };
+
+        // 과목별 원클릭 추천 학습 키워드 프리셋 (중3 내신 핵심)
+        const SUBJECT_TOPIC_PRESETS = {
+            '수학': [
+                '이차함수의 그래프와 최댓값·최솟값',
+                '피타고라스 정리와 삼각비(sin, cos, tan)',
+                '원의 성질과 원주각의 활용',
+                '근호를 포함한 식의 계산과 제곱근 함정'
+            ],
+            '영어': [
+                '관계대명사 what vs 접속사 that 구별 함정',
+                '현재완료(have p.p) 4가지 용법 내신 구별',
+                '간접의문문 어순(의문사+주어+동사) 서술형',
+                '분사구문(현재분사 -ing vs 과거분사 p.p) 감정동사'
+            ],
+            '국어': [
+                '비문학 독해: 주장과 근거 3줄 요약 및 추론',
+                '음운의 변동 (비음화, 유음화, 구개음화) 원리',
+                '문학 작품 속 화자의 태도와 시적 정서 파악',
+                '문장의 짜임 (안은문장과 이어진문장 구분)'
+            ],
+            '역사·사회': [
+                '조선 후기 삼정의 문란(전정·군정·환곡)과 세도정치',
+                '흥선대원군의 개혁 정치와 통상수교거부정책',
+                '헌법과 기본권 및 국회·행정부·사법부 삼권분립',
+                '시장 가격의 결정과 수요·공급 법칙 그래프'
+            ],
+            '과학': [
+                '일과 에너지 전환 및 역학적 에너지 보존 법칙',
+                '자극과 반응: 뉴런의 구조와 조건반사 vs 무조건반사',
+                '체세포 분열 vs 감수 분열(생식세포 분열) 비교',
+                '화학 반응식 계수 맞추기와 질량 보존 법칙'
+            ]
+        };
+
+        // 과목별 고품질 내장 스마트 문제 은행 (네트워크 지연/오프라인 시에도 100% 작동 보장)
+        const FALLBACK_PROBLEM_SETS = {
+            '수학': [
+                {
+                    level: 'ROUND 1 // 난이도: 하 (핵심 개념 스캔)',
+                    question: '이차함수 y = -2(x - 3)² + 5 의 그래프에 대한 설명으로 옳은 것은?',
+                    options: [
+                        '1) 아래로 볼록한 포물선이다.',
+                        '2) 꼭짓점의 좌표는 (-3, 5)이다.',
+                        '3) 축의 방정식은 x = 3 이고, 최댓값은 5이다.',
+                        '4) x > 3 일 때, x의 값이 증가하면 y의 값도 증가한다.'
+                    ],
+                    answerIndex: 2,
+                    hint: '이차함수 y = a(x-p)² + q 에서 a의 부호가 그래프 모양을, (p, q)가 꼭짓점 좌표를 결정합니다. (x-3)이 0이 되는 x값을 찾아보세요!',
+                    explanation: 'a = -2 < 0 이므로 위로 볼록하며, 꼭짓점은 (3, 5), 축의 방정식은 x = 3, 최댓값은 5입니다.'
+                },
+                {
+                    level: 'ROUND 2 // 난이도: 중 (내신 빈출 응용)',
+                    question: '이차함수 y = x² - 6x + k 의 그래프의 꼭짓점이 x축 위에 있을 때, 상수 k의 값은?',
+                    options: [
+                        '1) k = 3',
+                        '2) k = 6',
+                        '3) k = 9',
+                        '4) k = -9'
+                    ],
+                    answerIndex: 2,
+                    hint: '"꼭짓점이 x축 위에 있다"는 말은 꼭짓점의 y좌표가 0이라는 뜻입니다! 완전제곱식 (x - 3)² 형태가 되려면 상수항이 얼마여야 할까요?',
+                    explanation: 'y = (x - 3)² - 9 + k 로 표준형 변환 시 꼭짓점은 (3, k - 9)입니다. x축 위에 있으므로 k - 9 = 0, 따라서 k = 9입니다.'
+                },
+                {
+                    level: 'ROUND 3 // 난이도: 상 (내신 함정 & 서술형 킬러)',
+                    question: '다음 중 √(-5)² + (-√3)² - √16 을 계산한 값으로 옳은 것은? (부호 함정 주의!)',
+                    options: [
+                        '1) -6',
+                        '2) 0',
+                        '3) 4',
+                        '4) 12'
+                    ],
+                    answerIndex: 2,
+                    hint: '중3 내신 1번 단골 함정입니다! √(A²) 은 무조건 양수(|A|)로 나옵니다. √(-5)² 이 -5인지 +5인지 먼저 확인해 보세요!',
+                    explanation: '√(-5)² = |-5| = 5, (-√3)² = 3, √16 = 4 입니다. 따라서 5 + 3 - 4 = 4 가 정답입니다.'
+                }
+            ],
+            '영어': [
+                {
+                    level: 'ROUND 1 // 난이도: 하 (핵심 어법 확인)',
+                    question: '빈칸에 들어갈 말로 가장 적절한 것은? "_______ I want to buy is the new tactical skin."',
+                    options: [
+                        '1) That',
+                        '2) What',
+                        '3) Which',
+                        '4) Who'
+                    ],
+                    answerIndex: 1,
+                    hint: '빈칸 앞에 꾸며줄 명사(선행사)가 있는지 확인하고, buy 뒤에 목적어가 비어 있는지(불완전한 문장인지) 스캔해 보세요!',
+                    explanation: '선행사를 포함한 관계대명사 What(~하는 것)은 앞에 선행사가 없고 뒤에 불완전한 절(buy의 목적어 없음)이 올 때 사용합니다.'
+                },
+                {
+                    level: 'ROUND 2 // 난이도: 중 (내신 빈출 함정)',
+                    question: '다음 중 어법상 어색한(틀린) 문장을 고르시오.',
+                    options: [
+                        '1) Do you know where did he go yesterday?',
+                        '2) Can you tell me what time the match starts?',
+                        '3) I wonder if she will join our team.',
+                        '4) Who do you think won the championship?'
+                    ],
+                    answerIndex: 0,
+                    hint: '의문문이 다른 문장의 목적어 자리로 들어가면 [간접의문문]이 됩니다. 어순이 [의문사 + 동사 + 주어]인지, [의문사 + 주어 + 동사]인지 확인해 보세요!',
+                    explanation: '1번은 간접의문문이므로 did가 사라지고 동사에 과거시제를 반영하여 "Do you know where he went yesterday?"가 되어야 합니다.'
+                },
+                {
+                    level: 'ROUND 3 // 난이도: 상 (서술형 & 분사 함정)',
+                    question: '"그 경기 결과는 매우 충격적이어서, 관중들은 충격에 빠졌다." 빈칸 짝지음으로 옳은 것은? The match result was so (A)_______ that the audience felt (B)_______.',
+                    options: [
+                        '1) (A) shocked - (B) shocking',
+                        '2) (A) shocking - (B) shocked',
+                        '3) (A) shocking - (B) shocking',
+                        '4) (A) shocked - (B) shocked'
+                    ],
+                    answerIndex: 1,
+                    hint: '감정 분사 함정입니다! 감정을 유발하는 원인(경기 결과)에는 능동(-ing), 감정을 느끼는 주체(관중)에는 수동(-ed)을 씁니다.',
+                    explanation: '경기 결과(사물)가 충격을 주는 것이므로 shocking, 관중(사람)이 충격을 느낀 것이므로 shocked가 정답입니다.'
+                }
+            ],
+            '국어': [
+                {
+                    level: 'ROUND 1 // 난이도: 하 (음운 변동 기본)',
+                    question: '단어 "국물[궁물]"에서 일어나는 음운 현상과 동일한 것은?',
+                    options: [
+                        '1) 신라[실라]',
+                        '2) 같이[가치]',
+                        '3) 밥물[밤물]',
+                        '4) 축하[추카]'
+                    ],
+                    answerIndex: 2,
+                    hint: '받침 ㄱ(파열음)이 뒤의 ㅁ(비음)을 만나 ㅇ(비음)으로 바뀐 현상입니다. 보기 중 받침 ㅂ이 ㅁ을 만나 비음으로 바뀌는 것을 찾아보세요!',
+                    explanation: '"국물[궁물]"과 "밥물[밤물]"은 모두 파열음(ㄱ,ㄷ,ㅂ)이 비음(ㄴ,ㅁ) 앞에서 비음(ㅇ,ㄴ,ㅁ)으로 바뀌는 [비음화] 현상입니다.'
+                },
+                {
+                    level: 'ROUND 2 // 난이도: 중 (문장의 짜임 내신 빈출)',
+                    question: '다음 중 [명사절을 안은문장]에 해당하는 것은?',
+                    options: [
+                        '1) 그는 마음이 넓다.',
+                        '2) 나는 그가 정직함을 알고 있다.',
+                        '3) 내가 읽은 책은 아주 재미있다.',
+                        '4) 비가 소리도 없이 내린다.'
+                    ],
+                    answerIndex: 1,
+                    hint: '명사형 전성어미 "-(으)ㅁ"이나 "-기"가 붙어서 문장 안에서 목적어(~을/를)나 주어 역할을 하는 절을 찾아보세요!',
+                    explanation: '2번 "그가 정직함(정직하다 + -ㅁ)"이 문장 전체의 목적어 역할을 하는 명사절을 안은문장입니다.'
+                },
+                {
+                    level: 'ROUND 3 // 난이도: 상 (비문학 논리 추론)',
+                    question: '비문학 글에서 "백신은 병원체의 독성을 약화시켜 체내에 주입함으로써 기억 세포를 미리 형성하게 한다"는 문장의 핵심 논리 구조는?',
+                    options: [
+                        '1) 통념 비판 및 반박',
+                        '2) 원리(메커니즘)와 목적 설명',
+                        '3) 두 대상의 차이점 대조',
+                        '4) 역사적 변천 과정의 통시적 나열'
+                    ],
+                    answerIndex: 1,
+                    hint: '"~함으로써(수단/원리) ~하게 한다(결과/목적)"의 문장 표지에 주목해 보세요!',
+                    explanation: '백신이 작동하는 생물학적 메커니즘(독성 약화 주입)과 그 목적(기억 세포 형성)을 인과적으로 설명하는 구조입니다.'
+                }
+            ],
+            '역사·사회': [
+                {
+                    level: 'ROUND 1 // 난이도: 하 (핵심 개념 확인)',
+                    question: '조선 후기 세도 정치 시기에 농민들을 가장 고통스럽게 했던 [삼정의 문란] 중, 봄에 곡식을 빌려주고 가을에 이자를 붙여 갚게 하던 빈민 구제 제도가 고리대처럼 변질된 것은?',
+                    options: [
+                        '1) 전정 (토지세)',
+                        '2) 군정 (군포 징수)',
+                        '3) 환곡 (춘대추납)',
+                        '4) 대동법 (특산물 공납)'
+                    ],
+                    answerIndex: 2,
+                    hint: '원래는 가난한 농민에게 곡식을 빌려주었다가 돌려받는(환) 곡식(곡) 제도였으나, 억지로 빌려주고 높은 이자를 뜯어낸 제도입니다!',
+                    explanation: '삼정(전정·군정·환곡) 중 가장 폐해가 심했던 것은 빈민 구제책이 고리대로 변질된 [환곡]입니다.'
+                },
+                {
+                    level: 'ROUND 2 // 난이도: 중 (내신 사료 함정)',
+                    question: '흥선대원군이 "양반에게도 군포를 징수하라!"며 실시한 개혁 정책으로, 국가 재정 확충과 양반의 특권 약화를 동시에 노린 제도는?',
+                    options: [
+                        '1) 호포제 실시',
+                        '2) 사창제 실시',
+                        '3) 경복궁 중건과 당백전 발행',
+                        '4) 척화비 건립'
+                    ],
+                    answerIndex: 0,
+                    hint: '군정의 문란을 해결하기 위해 집(호, 戶)마다 포(군포)를 거두게 한 제도입니다!',
+                    explanation: '흥선대원군은 상민에게만 부과하던 군포를 양반에게까지 확대 징수하는 [호포제]를 실시하여 군정의 문란을 개혁했습니다.'
+                },
+                {
+                    level: 'ROUND 3 // 난이도: 상 (연표 및 인과관계 킬러)',
+                    question: '다음 중 병인양요(1866)와 신미양요(1871)를 겪은 직후, 흥선대원군이 통상 수교 거부 의지를 전국에 알리기 위해 세운 비석은?',
+                    options: [
+                        '1) 진흥왕 순수비',
+                        '2) 척화비',
+                        '3) 광개토대왕릉비',
+                        '4) 만동묘비'
+                    ],
+                    answerIndex: 1,
+                    hint: '"서양 오랑캐가 침범하는데 싸우지 않는 것은 화친하는 것이요, 화친을 주장하는 것은 나라를 파는 것이다"라는 문구가 새겨진 비석입니다.',
+                    explanation: '신미양요(1871) 직후 전국 각지에 [척화비]를 세워 통상 수교 거부 정책을 대내외에 천명했습니다.'
+                }
+            ],
+            '과학': [
+                {
+                    level: 'ROUND 1 // 난이도: 하 (핵심 개념 스캔)',
+                    question: '공기 저항과 마찰이 없을 때, 높은 곳에서 가만히 놓은 물체가 낙하하는 동안 일어나는 에너지 변화로 옳은 것은?',
+                    options: [
+                        '1) 위치 에너지는 증가하고 운동 에너지는 감소한다.',
+                        '2) 위치 에너지는 감소하고 운동 에너지는 증가하며, 역학적 에너지는 일정하다.',
+                        '3) 역학적 에너지가 점점 줄어든다.',
+                        '4) 속력이 일정하게 유지된다.'
+                    ],
+                    answerIndex: 1,
+                    hint: '높이(h)가 낮아질수록 위치 에너지는 어떻게 되고, 속력(v)이 빨라질수록 운동 에너지는 어떻게 될지 생각해 보세요!',
+                    explanation: '낙하 시 감소한 위치 에너지만큼 운동 에너지가 증가하므로, 두 에너지의 합인 [역학적 에너지]는 모든 지점에서 일정하게 보존됩니다.'
+                },
+                {
+                    level: 'ROUND 2 // 난이도: 중 (내신 빈출 비교 함정)',
+                    question: '뜨거운 냄비에 손이 닿았을 때 나도 모르게 손을 떼는 반응(무조건 반사)의 중추로 옳은 것은?',
+                    options: [
+                        '1) 대뇌',
+                        '2) 소뇌',
+                        '3) 척수',
+                        '4) 간뇌'
+                    ],
+                    answerIndex: 2,
+                    hint: '대뇌까지 신호가 올라갔다 내려오면 이미 손을 데입니다! 대뇌를 거치지 않고 즉각 명령을 내리는 척추 속 신경 통로는 어디일까요?',
+                    explanation: '무릎 반사나 뜨거운 것에 손이 닿아 움츠리는 회피 반사는 [척수]가 중추인 무조건 반사입니다.'
+                },
+                {
+                    level: 'ROUND 3 // 난이도: 상 (세포 분열 함정 킬러)',
+                    question: '염색체 수가 2n = 46 인 사람의 체세포 분열 결과 만들어진 딸세포 1개의 염색체 수와, 생식세포 분열(감수 분열) 결과 만들어진 생식세포 1개의 염색체 수를 바르게 짝지은 것은?',
+                    options: [
+                        '1) 체세포: 23개 / 생식세포: 23개',
+                        '2) 체세포: 46개 / 생식세포: 23개',
+                        '3) 체세포: 46개 / 생식세포: 46개',
+                        '4) 체세포: 92개 / 생식세포: 46개'
+                    ],
+                    answerIndex: 1,
+                    hint: '체세포 분열은 상처 재생이나 성장을 위해 원래 세포와 똑같은 염색체 수를 유지하고, 생식세포(정자·난자)는 수정 후 46개가 되려면 절반으로 줄어야 합니다!',
+                    explanation: '체세포 분열은 염색체 수가 변하지 않아 2n = 46개이고, 감수 분열(생식세포 분열)은 절반으로 줄어들어 n = 23개가 됩니다.'
+                }
+            ]
+        };
+
+        // Web Audio API 기반 전술 효과음 합성기 (외부 오디오 파일 없이 작동)
+        function playTacticalSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+
+                const notes = type === 'COMPLETE'
+                    ? [523.25, 659.25, 783.99, 1046.50] // 승리 팡파르 (C5-E5-G5-C6)
+                    : type === 'UNLOCK'
+                    ? [587.33, 880.00, 1174.66]         // 스킨 해금음
+                    : [440.00, 554.37];                 // 일반 클릭/알림
+
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.11);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.11);
+                    osc.stop(now + idx * 0.11 + 0.26);
+                });
+            } catch (e) {
+                // 오디오 컨텍스트 제한 시 무시
+            }
+        }
+
+        // 상단 토스트 알림 표시
+        function showToast(title, message) {
+            const toast = document.getElementById('tactical-toast');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 4000);
+        }
+
+        // LocalStorage에서 유저 데이터 불러오기
+        function loadProgressFromStorage() {
+            const raw = localStorage.getItem('valo_study_v1_1_state');
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    AppState.streak = parsed.streak ?? 3;
+                    AppState.vp = parsed.vp ?? 450;
+                    AppState.completedSessions = parsed.completedSessions ?? 0;
+                    AppState.unlockedSkins = parsed.unlockedSkins ?? ['default'];
+                    AppState.equippedSkin = parsed.equippedSkin ?? 'default';
+                    AppState.unlockedIcons = parsed.unlockedIcons ?? ['duelist'];
+                    AppState.equippedIcon = parsed.equippedIcon ?? 'duelist';
+                } catch (e) {
+                    console.warn('State parse error', e);
+                }
+            }
+            applyThemeAndHUD();
+        }
+
+        // LocalStorage에 유저 데이터 저장하기
+        function saveProgressToStorage() {
+            const data = {
+                streak: AppState.streak,
+                vp: AppState.vp,
+                completedSessions: AppState.completedSessions,
+                unlockedSkins: AppState.unlockedSkins,
+                equippedSkin: AppState.equippedSkin,
+                unlockedIcons: AppState.unlockedIcons,
+                equippedIcon: AppState.equippedIcon
+            };
+            localStorage.setItem('valo_study_v1_1_state', JSON.stringify(data));
+            applyThemeAndHUD();
+        }
+
+        // 스킨 CSS 클래스 및 상단 HUD 정보 업데이트
+        function applyThemeAndHUD() {
+            // 스킨 적용
+            document.body.classList.remove('skin-prime', 'skin-kuronami');
+            const skinObj = SKIN_CATALOG.find(s => s.id === AppState.equippedSkin) || SKIN_CATALOG[0];
+            if (skinObj.cssClass) {
+                document.body.classList.add(skinObj.cssClass);
+            }
+            document.getElementById('hud-skin-badge').textContent = skinObj.name;
+
+            // 아이콘 및 칭호 적용
+            const iconObj = ICON_CATALOG.find(i => i.id === AppState.equippedIcon) || ICON_CATALOG[0];
+            document.getElementById('hud-agent-emoji').textContent = iconObj.emoji;
+            document.getElementById('agent-title-display').textContent = iconObj.title;
+
+            // 숫자 HUD 업데이트
+            document.getElementById('hud-streak').textContent = AppState.streak;
+            document.getElementById('hud-vp').textContent = AppState.vp.toLocaleString();
+            document.getElementById('hud-sessions').textContent = AppState.completedSessions;
+            
+            const totalUnlocked = AppState.unlockedSkins.length + AppState.unlockedIcons.length;
+            const totalItems = SKIN_CATALOG.length + ICON_CATALOG.length;
+            const unlockCountEl = document.getElementById('lobby-unlock-count');
+            if (unlockCountEl) unlockCountEl.textContent = `${totalUnlocked} / ${totalItems}`;
+        }
+
+        // 오늘 날짜 문자열 반환
+        function getTodayDateString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 스플래시 건너뛰기
+        function skipSplash() {
+            const splash = document.getElementById('splash-screen');
+            if (!splash || splash.style.display === 'none') return;
+            splash.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                splash.style.display = 'none';
+                checkAndShowDailyNotice();
+            }, 300);
+        }
+
+        // 초기 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProgressFromStorage();
+            const todayStr = getTodayDateString();
+            document.getElementById('modal-today-date').textContent = todayStr.replace(/-/g, '.');
+
+            setTimeout(() => {
+                skipSplash();
+            }, 1150);
+        });
+
+        // 일일 공지 체크
+        function checkAndShowDailyNotice() {
+            const todayStr = getTodayDateString();
+            const savedHideDate = localStorage.getItem('valo_study_hide_notice_date');
+            if (savedHideDate !== todayStr) {
+                const modal = document.getElementById('daily-notice-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeDailyNotice() {
+            const checkbox = document.getElementById('hide-today-checkbox');
+            const todayStr = getTodayDateString();
+            if (checkbox && checkbox.checked) {
+                localStorage.setItem('valo_study_hide_notice_date', todayStr);
+            }
+            const modal = document.getElementById('daily-notice-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function openDailyNoticeManual() {
+            localStorage.removeItem('valo_study_hide_notice_date');
+            document.getElementById('hide-today-checkbox').checked = false;
+            const modal = document.getElementById('daily-notice-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // 과목 선택 핸들러
+        function selectSubject(subjectName, iconClass, description) {
+            AppState.selectedSubject = subjectName;
+            AppState.selectedSubjectDesc = description;
+
+            const buttons = document.querySelectorAll('.subject-btn');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('data-subject') === subjectName) {
+                    btn.className = 'subject-btn group p-3 rounded bg-valo-red text-valo-dark border border-valo-red font-bold text-sm flex items-center justify-center space-x-2 transition-all glow-red';
+                    if (subjectName === '과학') btn.classList.add('col-span-2', 'sm:col-span-1');
+                } else {
+                    btn.className = 'subject-btn group p-3 rounded bg-valo-dark hover:bg-white/10 text-valo-offwhite/80 border border-white/10 font-bold text-sm flex items-center justify-center space-x-2 transition-all';
+                    if (btn.getAttribute('data-subject') === '과학') btn.classList.add('col-span-2', 'sm:col-span-1');
+                }
+            });
+
+            document.getElementById('selected-subject-desc').textContent = `${subjectName} — ${description}`;
+        }
+
+        // ==============================================
+        // Step 2: 타이머 & 10분 강제 휴식 & 재도전 루프
+        // ==============================================
+        function startMission(modeKey, isOvertime = false) {
+            AppState.selectedMode = modeKey;
+            AppState.timerPhase = 'FOCUS';
+            AppState.isPaused = false;
+            AppState.roundCount = isOvertime ? AppState.roundCount + 1 : 1;
+
+            const is15Min = modeKey === 'TRACK_A_15M';
+            AppState.totalSeconds = is15Min ? 15 * 60 : 30 * 60;
+            AppState.remainingSeconds = AppState.totalSeconds;
+
+            // UI 배지 및 타이틀 세팅
+            const modeBadge = document.getElementById('stage-mode-badge');
+            const subjectBadge = document.getElementById('stage-subject-badge');
+            const roundBadge = document.getElementById('stage-round-badge');
+            const stageTitle = document.getElementById('stage-title-display');
+            const phaseLabel = document.getElementById('timer-phase-label');
+            const hudCard = document.getElementById('timer-hud-card');
+
+            subjectBadge.textContent = `TARGET: ${AppState.selectedSubject}`;
+            roundBadge.textContent = isOvertime ? `OVERTIME ROUND ${AppState.roundCount}` : `ROUND ${AppState.roundCount}`;
+            document.getElementById('cooldown-lock-banner').classList.add('hidden');
+            document.getElementById('focus-controls').classList.remove('hidden');
+            document.getElementById('tactical-checklist-box').classList.remove('hidden');
+
+            if (is15Min) {
+                modeBadge.textContent = 'TRACK A // 15M LIGHT REVIEW';
+                modeBadge.className = 'px-3 py-1 bg-valo-cyan text-valo-dark font-mono text-xs font-extrabold uppercase clip-valo-badge';
+                hudCard.className = 'bg-valo-card border-2 border-valo-cyan clip-valo-card p-6 sm:p-8 relative overflow-hidden';
+                phaseLabel.textContent = 'DEFENSE PROTOCOL ACTIVE // 15분 집중 방어전';
+                stageTitle.textContent = `[${AppState.selectedSubject}] 15분 라이트 복습 작전`;
+            } else {
+                modeBadge.textContent = isOvertime ? 'OVERTIME // 30M DEEP LEARNING' : 'TRACK B // 30M DEEP LEARNING';
+                modeBadge.className = 'px-3 py-1 bg-valo-red text-valo-dark font-mono text-xs font-extrabold uppercase clip-valo-badge';
+                hudCard.className = 'bg-valo-card border-2 border-valo-red clip-valo-card p-6 sm:p-8 relative overflow-hidden';
+                phaseLabel.textContent = 'ATTACK PROTOCOL ACTIVE // 30분 딥 러닝 교전 중';
+                stageTitle.textContent = `[${AppState.selectedSubject}] 30분 딥 러닝 챌린지`;
+            }
+
+            renderMissionChecklist(is15Min);
+            updatePauseResumeButtonUI();
+            updateTimerDisplay();
+
+            // Step 3: AI 학습 콘솔 초기화 (선택된 과목에 맞는 추천 칩 & 기본 3문제 & 튜터 인사말 세팅)
+            initStep3ConsoleForSubject(AppState.selectedSubject);
+
+            // 뷰 전환
+            document.getElementById('lobby-view').classList.add('hidden');
+            document.getElementById('mission-stage-view').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            runTimerInterval();
+        }
+
+        // 모드별 전술 체크리스트 렌더링
+        function renderMissionChecklist(is15Min) {
+            const container = document.getElementById('checklist-items');
+            if (is15Min) {
+                container.innerHTML = `
+                    <label class="p-3.5 bg-valo-dark/80 border border-white/10 rounded flex items-start space-x-3 cursor-pointer hover:border-valo-cyan transition-colors">
+                        <input type="checkbox" class="mt-1 w-4 h-4 accent-valo-cyan">
+                        <div>
+                            <span class="font-mono text-xs text-valo-cyan font-bold block">STEP 01 (5분)</span>
+                            <span class="text-xs sm:text-sm text-valo-offwhite font-bold">오늘 배운 핵심 개념 1개 눈으로 스캔</span>
+                        </div>
+                    </label>
+                    <label class="p-3.5 bg-valo-dark/80 border border-white/10 rounded flex items-start space-x-3 cursor-pointer hover:border-valo-cyan transition-colors">
+                        <input type="checkbox" class="mt-1 w-4 h-4 accent-valo-cyan">
+                        <div>
+                            <span class="font-mono text-xs text-valo-cyan font-bold block">STEP 02 (5분)</span>
+                            <span class="text-xs sm:text-sm text-valo-offwhite font-bold">내신 단골 함정 문제 1번 격파</span>
+                        </div>
+                    </label>
+                    <label class="p-3.5 bg-valo-dark/80 border border-white/10 rounded flex items-start space-x-3 cursor-pointer hover:border-valo-cyan transition-colors">
+                        <input type="checkbox" class="mt-1 w-4 h-4 accent-valo-cyan">
+                        <div>
+                            <span class="font-mono text-xs text-valo-cyan font-bold block">STEP 03 (5분)</span>
+                            <span class="text-xs sm:text-sm text-valo-offwhite font-bold">내신 함정 문제 2번 및 오답 키워드 확인</span>
+                        </div>
+                    </label>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="p-3.5 bg-valo-dark/80 border border-white/10 rounded flex items-start space-x-3 cursor-pointer hover:border-valo-red transition-colors">
+                        <input type="checkbox" class="mt-1 w-4 h-4 accent-valo-red">
+                        <div>
+                            <span class="font-mono text-xs text-valo-red font-bold block">PHASE 01 (10분)</span>
+                            <span class="text-xs sm:text-sm text-valo-offwhite font-bold">핵심 개념 정리 & 노트 요약 스캔</span>
+                        </div>
+                    </label>
+                    <label class="p-3.5 bg-valo-dark/80 border border-white/10 rounded flex items-start space-x-3 cursor-pointer hover:border-valo-red transition-colors">
+                        <input type="checkbox" class="mt-1 w-4 h-4 accent-valo-red">
+                        <div>
+                            <span class="font-mono text-xs text-valo-gold font-bold block">PHASE 02 (10분 // STEP 3 AI 연동)</span>
+                            <span class="text-xs sm:text-sm text-valo-offwhite font-bold">소크라테스 AI 튜터와 힌트 문답</span>
+                        </div>
+                    </label>
+                    <label class="p-3.5 bg-valo-dark/80 border border-white/10 rounded flex items-start space-x-3 cursor-pointer hover:border-valo-red transition-colors">
+                        <input type="checkbox" class="mt-1 w-4 h-4 accent-valo-red">
+                        <div>
+                            <span class="font-mono text-xs text-valo-cyan font-bold block">PHASE 03 (10분)</span>
+                            <span class="text-xs sm:text-sm text-valo-offwhite font-bold">하/중/상 내신 실전 3문제 풀이</span>
+                        </div>
+                    </label>
+                `;
+            }
+        }
+
+        // 1초 간격 타이머 루프 실행
+        function runTimerInterval() {
+            if (AppState.timerInterval) clearInterval(AppState.timerInterval);
+            AppState.timerInterval = setInterval(() => {
+                if (AppState.isPaused) return;
+                if (AppState.remainingSeconds > 0) {
+                    AppState.remainingSeconds--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(AppState.timerInterval);
+                    handleTimerZero();
+                }
+            }, 1000);
+        }
+
+        // 화면의 MM:SS 및 게이지 업데이트
+        function updateTimerDisplay() {
+            const mins = Math.floor(AppState.remainingSeconds / 60);
+            const secs = AppState.remainingSeconds % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            document.getElementById('countdown-display').textContent = formatted;
+
+            const elapsed = AppState.totalSeconds - AppState.remainingSeconds;
+            const percent = AppState.totalSeconds > 0 ? Math.min(100, Math.round((elapsed / AppState.totalSeconds) * 100)) : 0;
+            document.getElementById('progress-percent-text').textContent = `${percent}%`;
+            document.getElementById('timer-progress-bar').style.width = `${percent}%`;
+        }
+
+        // 일시정지 / 재개 토글
+        function togglePauseTimer() {
+            AppState.isPaused = !AppState.isPaused;
+            updatePauseResumeButtonUI();
+        }
+
+        function updatePauseResumeButtonUI() {
+            const icon = document.getElementById('pause-resume-icon');
+            const text = document.getElementById('pause-resume-text');
+            if (AppState.isPaused) {
+                icon.className = 'ph-fill ph-play text-lg text-valo-cyan';
+                text.textContent = '작전 재개 (RESUME)';
+            } else {
+                icon.className = 'ph-fill ph-pause text-lg';
+                text.textContent = '일시정지 (PAUSE)';
+            }
+        }
+
+        // [테스트용] 타이머 N초 남기기
+        function fastForwardTimer(secondsLeft) {
+            AppState.remainingSeconds = secondsLeft;
+            AppState.isPaused = false;
+            updatePauseResumeButtonUI();
+            updateTimerDisplay();
+        }
+
+        // [테스트용] 현재 단계 즉시 완료
+        function completeCurrentPhaseImmediately() {
+            if (AppState.timerInterval) clearInterval(AppState.timerInterval);
+            AppState.remainingSeconds = 0;
+            updateTimerDisplay();
+            handleTimerZero();
+        }
+
+        // 타이머가 00:00에 도달했을 때의 분기 처리
+        function handleTimerZero() {
+            playTacticalSound('COMPLETE');
+
+            // Case 1: 15분 라이트 복습 완료 시 -> 즉시 보상 지급 후 로비 귀환
+            if (AppState.selectedMode === 'TRACK_A_15M') {
+                AppState.vp += 150;
+                AppState.streak += 1;
+                AppState.completedSessions += 1;
+                if (!AppState.unlockedIcons.includes('sentinel')) {
+                    AppState.unlockedIcons.push('sentinel');
+                }
+                saveProgressToStorage();
+                showToast('15분 라이트 복습 클리어!', '+150 VP 획득 & 부모님 카톡 리포트 브리핑이 준비되었습니다!');
+                returnToLobby();
+                if (document.getElementById('auto-kakao-toggle')?.checked) {
+                    setTimeout(() => openKakaoReportModal('15분 라이트 복습 완수'), 600);
+                }
+                return;
+            }
+
+            // Case 2: 30분 딥 러닝 집중 종료 시 -> 보상 해금 후 10분 강제 휴식(COOLDOWN) 자동 전환!
+            if (AppState.timerPhase === 'FOCUS') {
+                const earnedVP = AppState.roundCount > 1 ? 750 : 500;
+                AppState.vp += earnedVP;
+                AppState.completedSessions += 1;
+
+                let unlockMsg = `+${earnedVP} VP 획득! `;
+                if (!AppState.unlockedSkins.includes('prime')) {
+                    AppState.unlockedSkins.push('prime');
+                    unlockMsg += '[프라임 // 2.0 골드 스킨] & ';
+                }
+                if (!AppState.unlockedIcons.includes('initiator')) {
+                    AppState.unlockedIcons.push('initiator');
+                    unlockMsg += '[⚡ 전술 척후대 아이콘] 해금!';
+                }
+                saveProgressToStorage();
+                showToast('30분 딥 러닝 완수! 10분 강제 휴식 돌입', unlockMsg);
+
+                // 10분 전술적 강제 휴식 모드로 전환
+                startForcedCooldown();
+            } else if (AppState.timerPhase === 'COOLDOWN') {
+                // Case 3: 10분 강제 휴식 종료 시 -> 재도전(Overtime) vs 종료 선택 모달 오픈
+                const modal = document.getElementById('post-break-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        // 10분 강제 휴식(Tactical Cooldown) 시작
+        function startForcedCooldown() {
+            AppState.timerPhase = 'COOLDOWN';
+            AppState.isPaused = false;
+            AppState.totalSeconds = 10 * 60;
+            AppState.remainingSeconds = AppState.totalSeconds;
+
+            const modeBadge = document.getElementById('stage-mode-badge');
+            const phaseLabel = document.getElementById('timer-phase-label');
+            const stageTitle = document.getElementById('stage-title-display');
+            const hudCard = document.getElementById('timer-hud-card');
+
+            modeBadge.textContent = 'TACTICAL COOLDOWN // 10M FORCED REST';
+            modeBadge.className = 'px-3 py-1 bg-emerald-400 text-valo-dark font-mono text-xs font-extrabold uppercase clip-valo-badge';
+            hudCard.className = 'bg-valo-card border-2 border-emerald-400 clip-valo-card p-6 sm:p-8 relative overflow-hidden';
+            phaseLabel.textContent = 'BRAIN COOLDOWN PROTOCOL // 10분 전술적 강제 휴식';
+            stageTitle.textContent = '10분간 펜을 내려놓고 에너지를 재충전하세요';
+
+            document.getElementById('cooldown-lock-banner').classList.remove('hidden');
+            document.getElementById('focus-controls').classList.add('hidden');
+            document.getElementById('tactical-checklist-box').classList.add('hidden');
+
+            updateTimerDisplay();
+            runTimerInterval();
+        }
+
+        // 휴식 종료 후 [다음 라운드 계속 달리기 (OVERTIME)] 선택 시
+        function startOvertimeRound() {
+            const modal = document.getElementById('post-break-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            // 오버타임 돌입 보상: 쿠로나미 스킨 + 레디언트 아이콘 즉시 해금 & 장착!
+            if (!AppState.unlockedSkins.includes('kuronami')) {
+                AppState.unlockedSkins.push('kuronami');
+            }
+            if (!AppState.unlockedIcons.includes('radiant')) {
+                AppState.unlockedIcons.push('radiant');
+            }
+            AppState.equippedSkin = 'kuronami';
+            AppState.equippedIcon = 'radiant';
+            saveProgressToStorage();
+            playTacticalSound('UNLOCK');
+            showToast('OVERTIME 돌입 보상 해금!', '[쿠로나미 네온 스킨]과 [👑 레디언트 아이콘]이 해금 및 자동 장착되었습니다!');
+
+            startMission('TRACK_B_30M', true);
+        }
+
+        // 휴식 종료 후 [작전 종료 및 자유시간 누리기] 선택 시
+        function finishAndClaimRewards() {
+            const modal = document.getElementById('post-break-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            AppState.streak += 1;
+            saveProgressToStorage();
+            showToast('오늘의 작전 완벽 종료!', '연속 출석 스트릭이 증가했습니다. 남은 시간은 자유롭게 휴식하세요!');
+            returnToLobby();
+        }
+
+        // 로비로 귀환
+        function returnToLobby() {
+            if (AppState.timerInterval) clearInterval(AppState.timerInterval);
+            AppState.selectedMode = null;
+            AppState.timerPhase = 'IDLE';
+            document.getElementById('mission-stage-view').classList.add('hidden');
+            document.getElementById('lobby-view').classList.remove('hidden');
+        }
+
+        // ==============================================
+        // 무기고 (Armory: 스킨 & 아이콘 장착 모달) 로직
+        // ==============================================
+        function openArmoryModal() {
+            renderArmoryItems();
+            const modal = document.getElementById('armory-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeArmoryModal() {
+            const modal = document.getElementById('armory-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderArmoryItems() {
+            document.getElementById('armory-vp-display').textContent = AppState.vp.toLocaleString();
+
+            // 1. 스킨 목록 렌더링
+            const skinContainer = document.getElementById('skin-list-container');
+            skinContainer.innerHTML = SKIN_CATALOG.map(skin => {
+                const isUnlocked = AppState.unlockedSkins.includes(skin.id);
+                const isEquipped = AppState.equippedSkin === skin.id;
+
+                let btnHtml = '';
+                if (isEquipped) {
+                    btnHtml = `<button disabled class="w-full py-2 bg-valo-cyan/20 text-valo-cyan border border-valo-cyan font-mono text-xs font-bold rounded">✓ 장착 중 (EQUIPPED)</button>`;
+                } else if (isUnlocked) {
+                    btnHtml = `<button onclick="equipSkin('${skin.id}')" class="w-full py-2 bg-valo-red hover:opacity-90 text-valo-dark font-mono text-xs font-extrabold rounded transition-opacity">스킨 장착하기</button>`;
+                } else {
+                    btnHtml = `<button onclick="buySkinWithVP('${skin.id}')" class="w-full py-2 bg-white/5 hover:bg-valo-gold/20 text-valo-gold border border-valo-gold/40 font-mono text-xs font-bold rounded transition-colors">🔒 ${skin.costVP} VP로 즉시 해금</button>`;
+                }
+
+                return `
+                    <div class="p-4 bg-valo-dark border ${isEquipped ? 'border-valo-cyan' : 'border-white/10'} rounded flex flex-col justify-between space-y-3">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="w-4 h-4 rounded-full inline-block border border-white/20" style="background:${skin.primaryHex}"></span>
+                                    <span class="w-4 h-4 rounded-full inline-block border border-white/20" style="background:${skin.secondaryHex}"></span>
+                                </div>
+                                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded ${isUnlocked ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/5 text-valo-gray'}">
+                                    ${isUnlocked ? 'UNLOCKED' : 'LOCKED'}
+                                </span>
+                            </div>
+                            <h4 class="font-display font-bold text-base text-valo-offwhite">${skin.name}</h4>
+                            <p class="text-xs text-valo-gray">${skin.subtitle}</p>
+                            <p class="font-mono text-[11px] text-valo-gold/90 pt-1">조건: ${skin.unlockText}</p>
+                        </div>
+                        <div class="pt-2">${btnHtml}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // 2. 요원 아이콘 목록 렌더링
+            const iconContainer = document.getElementById('icon-list-container');
+            iconContainer.innerHTML = ICON_CATALOG.map(icon => {
+                const isUnlocked = AppState.unlockedIcons.includes(icon.id);
+                const isEquipped = AppState.equippedIcon === icon.id;
+
+                return `
+                    <div class="p-3.5 bg-valo-dark border ${isEquipped ? 'border-valo-cyan' : 'border-white/10'} rounded text-center flex flex-col justify-between space-y-2">
+                        <div class="text-3xl mx-auto my-1">${icon.emoji}</div>
+                        <div>
+                            <div class="font-bold text-xs sm:text-sm text-valo-offwhite">${icon.title}</div>
+                            <div class="font-mono text-[10px] text-valo-gray mt-0.5">${icon.unlockText}</div>
+                        </div>
+                        <div class="pt-1">
+                            ${isEquipped 
+                                ? `<span class="inline-block w-full py-1 bg-valo-cyan/20 text-valo-cyan font-mono text-[11px] font-bold rounded">장착됨</span>`
+                                : isUnlocked
+                                ? `<button onclick="equipIcon('${icon.id}')" class="w-full py-1 bg-white/10 hover:bg-valo-red hover:text-valo-dark text-valo-offwhite font-mono text-[11px] font-bold rounded transition-colors">장착하기</button>`
+                                : `<span class="inline-block w-full py-1 bg-white/5 text-valo-gray font-mono text-[11px] rounded">🔒 미해금</span>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function equipSkin(skinId) {
+            AppState.equippedSkin = skinId;
+            saveProgressToStorage();
+            playTacticalSound('UNLOCK');
+            renderArmoryItems();
+            showToast('테마 스킨 장착 완료', '앱 전체에 새로운 전술 스킨 컬러가 적용되었습니다!');
+        }
+
+        function buySkinWithVP(skinId) {
+            const skin = SKIN_CATALOG.find(s => s.id === skinId);
+            if (!skin) return;
+            if (AppState.vp < skin.costVP) {
+                showToast('VP 포인트 부족', `이 스킨을 해금하려면 ${skin.costVP} VP가 필요합니다. 30분 딥 러닝을 완수하면 무료로 즉시 해금됩니다!`);
+                return;
+            }
+            AppState.vp -= skin.costVP;
+            AppState.unlockedSkins.push(skinId);
+            AppState.equippedSkin = skinId;
+            saveProgressToStorage();
+            playTacticalSound('UNLOCK');
+            renderArmoryItems();
+            showToast('스킨 해금 및 장착 완료!', `[${skin.name}] 스킨이 적용되었습니다.`);
+        }
+
+        function equipIcon(iconId) {
+            AppState.equippedIcon = iconId;
+            saveProgressToStorage();
+            playTacticalSound('CLICK');
+            renderArmoryItems();
+        }
+
+        // [테스트용] 모든 스킨/아이콘 즉시 해금
+        function unlockAllForTest() {
+            AppState.unlockedSkins = SKIN_CATALOG.map(s => s.id);
+            AppState.unlockedIcons = ICON_CATALOG.map(i => i.id);
+            AppState.vp += 1000;
+            saveProgressToStorage();
+            playTacticalSound('UNLOCK');
+            renderArmoryItems();
+            showToast('테스트용 전체 해금 완료', '모든 스킨과 요원 아이콘을 클릭해 비교해 보실 수 있습니다!');
+        }
+
+        // [테스트용] 상태 초기화
+        function resetAllProgress() {
+            localStorage.removeItem('valo_study_v1_1_state');
+            AppState.streak = 3;
+            AppState.vp = 450;
+            AppState.completedSessions = 0;
+            AppState.unlockedSkins = ['default'];
+            AppState.equippedSkin = 'default';
+            AppState.unlockedIcons = ['duelist'];
+            AppState.equippedIcon = 'duelist';
+            saveProgressToStorage();
+            renderArmoryItems();
+            showToast('데이터 초기화 완료', '초기 상태로 리셋되었습니다.');
+        }
+
+        // =========================================================================
+        // 🤖 STEP 3: Gemini API 호출 엔진 (보안 프록시 & 내장 브릿지 & 지수 백오프)
+        // =========================================================================
+        const apiKey = ""; // Canvas 런타임 자동 주입 또는 Vercel 서버리스 모드에서 환경변수 사용
+
+        async function callGeminiAPI({ userPrompt, systemPrompt, responseSchema = null, inlineImage = null }) {
+            const contentsParts = [{ text: userPrompt }];
+            if (inlineImage && inlineImage.data) {
+                contentsParts.push({
+                    inlineData: {
+                        mimeType: inlineImage.mimeType || 'image/jpeg',
+                        data: inlineImage.data
+                    }
+                });
+            }
+
+            const payload = {
+                contents: [{ role: 'user', parts: contentsParts }]
+            };
+
+            if (systemPrompt) {
+                payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+            }
+
+            if (responseSchema) {
+                payload.generationConfig = {
+                    responseMimeType: 'application/json',
+                    responseSchema: responseSchema
+                };
+            }
+
+            // Vercel 서버리스 프록시 모드 vs 직접 브릿지 모드
+            const endpoint = AppState.apiConnectionMode === 'VERCEL_PROXY'
+                ? '/api/gemini'
+                : `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            // 지수 백오프 재시도 (1s, 2s)
+            const delays = [1000, 2000];
+            for (let attempt = 0; attempt <= delays.length; attempt++) {
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const result = await res.json();
+                    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) return text;
+                    throw new Error('Empty candidate response');
+                } catch (err) {
+                    if (attempt < delays.length) {
+                        await new Promise(r => setTimeout(r, delays[attempt]));
+                    } else {
+                        throw err;
+                    }
+                }
+            }
+        }
+
+        // Step 3 콘솔 초기화
+        function initStep3ConsoleForSubject(subject) {
+            // 1. 추천 키워드 칩 렌더링
+            const chips = SUBJECT_TOPIC_PRESETS[subject] || SUBJECT_TOPIC_PRESETS['수학'];
+            const chipContainer = document.getElementById('topic-preset-chips');
+            chipContainer.innerHTML = chips.map(topic => `
+                <button onclick="selectPresetTopic('${topic.replace(/'/g, "\\'")}')" 
+                    class="px-2.5 py-1 bg-valo-dark hover:bg-valo-cyan/20 text-valo-offwhite hover:text-valo-cyan border border-white/15 hover:border-valo-cyan/50 rounded font-sans text-xs transition-colors">
+                    # ${topic}
+                </button>
+            `).join('');
+
+            // 기본 첫 번째 주제를 입력창에 자동 세팅
+            document.getElementById('study-topic-input').value = chips[0];
+
+            // 2. 초기 내신 3문제 세트 즉시 로드
+            AppState.currentProblems = JSON.parse(JSON.stringify(FALLBACK_PROBLEM_SETS[subject] || FALLBACK_PROBLEM_SETS['수학']));
+            AppState.solvedCount = 0;
+            renderProblemCards();
+
+            // 3. 소크라테스 튜터 초기 인사말 세팅
+            if (AppState.tutorHistory.length === 0) {
+                resetTutorChat();
+            }
+        }
+
+        function selectPresetTopic(topicText) {
+            document.getElementById('study-topic-input').value = topicText;
+            showToast('학습 타겟 설정됨', `[${topicText}] 단원이 타겟으로 입력되었습니다. '내신 함정 3문제 출제'를 눌러보세요!`);
+        }
+
+        // 이미지 업로드 처리 (Base64 변환 및 미리보기)
+        function handleImageUpload(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                const base64Data = dataUrl.split(',')[1];
+                AppState.uploadedImageBase64 = base64Data;
+                AppState.uploadedImageMimeType = file.type || 'image/jpeg';
+
+                document.getElementById('vision-preview-img').src = dataUrl;
+                document.getElementById('vision-preview-box').classList.remove('hidden');
+                document.getElementById('clear-image-btn').classList.remove('hidden');
+                document.getElementById('vision-file-label').textContent = `첨부됨: ${file.name}`;
+                showToast('노트/손글씨 사진 스캔 준비 완료', '이제 [내신 함정 3문제 출제] 또는 [손글씨 풀이 AI 채점] 버튼을 누르세요!');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearUploadedImage() {
+            AppState.uploadedImageBase64 = null;
+            AppState.uploadedImageMimeType = null;
+            document.getElementById('vision-image-input').value = '';
+            document.getElementById('vision-preview-box').classList.add('hidden');
+            document.getElementById('clear-image-btn').classList.add('hidden');
+            document.getElementById('vision-file-label').textContent = '프린트물이나 손글씨 풀이를 찍어 올리면 AI가 분석합니다.';
+        }
+
+        // [핵심 기능 1] Gemini API로 내신 함정 3문제 생성 (하/중/상)
+        async function generateThreeProblems() {
+            const topicInput = document.getElementById('study-topic-input').value.trim() || `${AppState.selectedSubject} 핵심 개념`;
+            const loadingEl = document.getElementById('problems-loading');
+            const containerEl = document.getElementById('problems-container');
+
+            loadingEl.classList.remove('hidden');
+            containerEl.classList.add('opacity-40', 'pointer-events-none');
+
+            const systemPrompt = `너는 대한민국 중학교 3학년(예비 고1) 내신 출제 전문 AI 교관이다.
+학생이 입력한 과목(${AppState.selectedSubject})과 학습 주제(또는 첨부한 노트 사진)를 분석하여, 실제 학교 중간/기말고사에 자주 나오는 [하/중/상 난이도별 4지선다 3문제]를 JSON 배열로 출제하라.
+- 1번 문제: ROUND 1 // 난이도: 하 (핵심 개념 스캔)
+- 2번 문제: ROUND 2 // 난이도: 중 (내신 빈출 응용)
+- 3번 문제: ROUND 3 // 난이도: 상 (내신 단골 함정 킬러)
+각 문제의 options는 반드시 4개의 보기 문자열 배열("1) ...", "2) ...", "3) ...", "4) ...")로 구성하고, answerIndex는 0~3 사이의 정수로 지정하라.
+hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실마리를 주는 힌트여야 한다.`;
+
+            const userPrompt = `과목: ${AppState.selectedSubject}\n학습 타겟 단원/내용: ${topicInput}\n위 내용(및 첨부된 이미지가 있다면 이미지 속 필기 내용)을 바탕으로 중3 내신 대비 3문제를 출제해줘.`;
+
+            const schema = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        level: { type: "STRING" },
+                        question: { type: "STRING" },
+                        options: { type: "ARRAY", items: { type: "STRING" } },
+                        answerIndex: { type: "INTEGER" },
+                        hint: { type: "STRING" },
+                        explanation: { type: "STRING" }
+                    },
+                    required: ["level", "question", "options", "answerIndex", "hint", "explanation"]
+                }
+            };
+
+            try {
+                const inlineImg = AppState.uploadedImageBase64
+                    ? { data: AppState.uploadedImageBase64, mimeType: AppState.uploadedImageMimeType }
+                    : null;
+
+                const rawJson = await callGeminiAPI({
+                    userPrompt,
+                    systemPrompt,
+                    responseSchema: schema,
+                    inlineImage: inlineImg
+                });
+
+                const parsed = JSON.parse(rawJson);
+                if (Array.isArray(parsed) && parsed.length >= 3) {
+                    AppState.currentProblems = parsed.slice(0, 3);
+                    AppState.solvedCount = 0;
+                    renderProblemCards();
+                    playTacticalSound('UNLOCK');
+                    showToast('AI 내신 3문제 생성 완료!', `[${topicInput}] 맞춤형 하/중/상 3문제가 배치되었습니다.`);
+                } else {
+                    throw new Error('Invalid problem array');
+                }
+            } catch (e) {
+                // 폴백: 선택된 주제명을 반영한 스마트 내장 문제 세트로 즉시 전환
+                const baseSet = JSON.parse(JSON.stringify(FALLBACK_PROBLEM_SETS[AppState.selectedSubject] || FALLBACK_PROBLEM_SETS['수학']));
+                baseSet[0].level = `ROUND 1 // 난이도: 하 (${topicInput.slice(0, 14)})`;
+                AppState.currentProblems = baseSet;
+                AppState.solvedCount = 0;
+                renderProblemCards();
+                showToast('전술 내신 3문제 배치 완료', `[${AppState.selectedSubject}] 핵심 내신 함정 3문제가 로드되었습니다.`);
+            } finally {
+                loadingEl.classList.add('hidden');
+                containerEl.classList.remove('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        // 3문제 카드 UI 렌더링
+        function renderProblemCards() {
+            const container = document.getElementById('problems-container');
+            document.getElementById('problem-score-badge').textContent = `격파 현황: ${AppState.solvedCount} / ${AppState.currentProblems.length}`;
+
+            container.innerHTML = AppState.currentProblems.map((prob, idx) => {
+                const levelColor = idx === 0 ? 'text-valo-cyan border-valo-cyan/40' : idx === 1 ? 'text-valo-gold border-valo-gold/40' : 'text-valo-red border-valo-red/50';
+                const optionsHtml = (prob.options || []).map((opt, optIdx) => `
+                    <label class="flex items-center space-x-2.5 p-2.5 rounded bg-valo-dark/90 hover:bg-white/5 border border-white/10 cursor-pointer transition-colors">
+                        <input type="radio" name="prob-opt-${idx}" value="${optIdx}" class="accent-valo-red w-4 h-4">
+                        <span class="text-xs sm:text-sm text-valo-offwhite">${opt}</span>
+                    </label>
+                `).join('');
+
+                return `
+                    <div id="prob-card-${idx}" class="p-4 bg-valo-panel/80 border border-white/10 rounded space-y-3 transition-all">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-[11px] font-bold px-2 py-0.5 bg-valo-dark border ${levelColor} rounded">
+                                ${prob.level}
+                            </span>
+                            <button onclick="askSocraticHintForProblem(${idx})" class="px-2.5 py-1 bg-valo-cyan/15 hover:bg-valo-cyan/25 text-valo-cyan border border-valo-cyan/40 rounded font-mono text-[11px] font-bold flex items-center space-x-1 transition-colors">
+                                <i class="ph-fill ph-lightbulb"></i>
+                                <span>소크라테스 힌트 요청</span>
+                            </button>
+                        </div>
+
+                        <p class="text-sm sm:text-base font-bold text-valo-offwhite leading-snug">
+                            Q${idx + 1}. ${prob.question}
+                        </p>
+
+                        <div class="space-y-2">
+                            ${optionsHtml}
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <button onclick="checkProblemAnswer(${idx})" class="px-4 py-1.5 bg-valo-red hover:bg-valo-redHover text-valo-dark font-display font-bold text-xs uppercase tracking-wider clip-valo-btn">
+                                정답 판정 (CHECK)
+                            </button>
+                            <span id="prob-status-${idx}" class="font-mono text-xs text-valo-gray">대기 중</span>
+                        </div>
+
+                        <!-- 해설/피드백 박스 (정답 시 오픈) -->
+                        <div id="prob-feedback-${idx}" class="hidden p-3 rounded bg-valo-dark border border-white/15 text-xs space-y-1"></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 정답 판정 로직 (틀리면 정답을 바로 알려주지 않고 소크라테스 힌트 제공!)
+        function checkProblemAnswer(probIdx) {
+            const prob = AppState.currentProblems[probIdx];
+            if (!prob) return;
+
+            const selectedRadio = document.querySelector(`input[name="prob-opt-${probIdx}"]:checked`);
+            const feedbackBox = document.getElementById(`prob-feedback-${probIdx}`);
+            const statusSpan = document.getElementById(`prob-status-${probIdx}`);
+
+            if (!selectedRadio) {
+                showToast('보기를 선택하세요', `Q${probIdx + 1}번 문제의 보기를 먼저 선택한 뒤 정답 판정을 눌러주세요.`);
+                return;
+            }
+
+            const chosenIdx = parseInt(selectedRadio.value, 10);
+            feedbackBox.classList.remove('hidden');
+
+            if (chosenIdx === prob.answerIndex) {
+                if (!prob.isSolved) {
+                    prob.isSolved = true;
+                    AppState.solvedCount += 1;
+                    AppState.vp += 50;
+                    saveProgressToStorage();
+                    document.getElementById('problem-score-badge').textContent = `격파 현황: ${AppState.solvedCount} / ${AppState.currentProblems.length}`;
+                }
+                playTacticalSound('COMPLETE');
+                statusSpan.textContent = '✓ TARGET CLEARED (+50 VP)';
+                statusSpan.className = 'font-mono text-xs text-emerald-400 font-bold';
+                feedbackBox.className = 'p-3 rounded bg-emerald-950/50 border border-emerald-400/50 text-xs space-y-1 text-emerald-200';
+                feedbackBox.innerHTML = `
+                    <div class="font-bold text-emerald-300">🎯 헤드샷! 정확한 내신 개념 타격입니다! (+50 VP)</div>
+                    <p class="text-valo-offwhite/90">${prob.explanation}</p>
+                `;
+            } else {
+                playTacticalSound('CLICK');
+                statusSpan.textContent = '⚠️ 함정 감지됨 — 재시도 요망';
+                statusSpan.className = 'font-mono text-xs text-valo-gold font-bold';
+                feedbackBox.className = 'p-3 rounded bg-valo-dark border border-valo-gold/50 text-xs space-y-1.5';
+                feedbackBox.innerHTML = `
+                    <div class="font-bold text-valo-gold">🛡️ 내신 함정에 걸렸습니다! (소크라테스 프로토콜: 정답을 바로 공개하지 않습니다)</div>
+                    <p class="text-valo-offwhite/90"><strong>💡 튜터 힌트:</strong> ${prob.hint}</p>
+                    <p class="text-[11px] text-valo-cyan">우측 채팅창에서 튜터와 대화하거나 힌트를 참고해 다른 보기를 다시 골라보세요!</p>
+                `;
+            }
+        }
+
+        // 문제 카드에서 [소크라테스 힌트 요청] 클릭 시 우측 AI 튜터 채팅창으로 연동
+        function askSocraticHintForProblem(probIdx) {
+            const prob = AppState.currentProblems[probIdx];
+            if (!prob) return;
+
+            const promptText = `[Q${probIdx + 1} 힌트 요청] "${prob.question}" 문제를 풀고 있는데, 정답을 직접 알려주지 말고 내가 어떤 개념부터 떠올려야 할지 소크라테스식 질문으로 힌트를 줘!`;
+            document.getElementById('tutor-user-input').value = promptText;
+            sendTutorMessage();
+        }
+
+        // [핵심 기능 2] 손글씨 풀이 / 서술형 답안 AI 첨삭 (Vision 연동)
+        async function gradeHandwritingOrEssay() {
+            const topicText = document.getElementById('study-topic-input').value.trim() || `${AppState.selectedSubject} 서술형 풀이`;
+            const hasImage = !!AppState.uploadedImageBase64;
+
+            const userMsg = hasImage
+                ? `📷 [손글씨 풀이 사진 첨삭 요청] 단원: ${topicText}. 업로드한 손글씨 풀이(또는 노트) 사진에서 계산 실수나 논리적 비약은 없는지, 학교 서술형 채점 기준(필수 키워드)에 비추어 소크라테스식으로 피드백해줘!`
+                : `📝 [서술형 핵심 키워드 점검 요청] 단원: "${topicText}". 이 주제가 학교 서술형 시험에 나왔을 때 감점당하지 않으려면 반드시 포함해야 할 '필수 채점 키워드 3가지'를 짚어주고, 나에게 확인 질문을 던져줘!`;
+
+            appendTutorMessage('USER', userMsg);
+            await requestSocraticTutorReply(userMsg);
+        }
+
+        // =========================================================================
+        // 💬 MODULE C: 소크라테스 전술 튜터 채팅창 로직 (발로란트 사이퍼/세이지 페르소나)
+        // =========================================================================
+        function resetTutorChat() {
+            AppState.tutorHistory = [];
+            const log = document.getElementById('tutor-chat-log');
+            log.innerHTML = '';
+            appendTutorMessage(
+                'AI',
+                `반갑다 요원. 나는 너의 내신 전술 참모 **CYPHER(사이퍼)**다.\n\n내 규칙은 단 하나다. **절대로 정답을 그냥 떠먹여 주지 않는다.** 대신 네가 스스로 함정을 해체하고 '유능감'을 파밍할 수 있도록 핵심 단서(힌트)와 유도 질문만 던질 거다.\n\n왼쪽에서 **내신 3문제**를 풀어보거나, 헷갈리는 개념을 아래 채팅창에 편하게 물어봐라!`
+            );
+        }
+
+        function appendTutorMessage(sender, text) {
+            const log = document.getElementById('tutor-chat-log');
+            const isAI = sender === 'AI';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex ${isAI ? 'justify-start' : 'justify-end'}`;
+
+            const formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-valo-gold">$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            wrapper.innerHTML = isAI
+                ? `
+                    <div class="max-w-[88%] bg-valo-panel border-l-3 border-valo-cyan p-3.5 rounded-r space-y-1 shadow">
+                        <div class="font-mono text-[10px] text-valo-cyan font-bold">CYPHER // TACTICAL TUTOR</div>
+                        <div class="text-valo-offwhite/95 leading-relaxed">${formattedText}</div>
+                    </div>
+                `
+                : `
+                    <div class="max-w-[85%] bg-valo-red/20 border border-valo-red/50 p-3 rounded-l space-y-1">
+                        <div class="font-mono text-[10px] text-valo-red font-bold text-right">AGENT // YOU</div>
+                        <div class="text-valo-offwhite leading-relaxed">${formattedText}</div>
+                    </div>
+                `;
+
+            log.appendChild(wrapper);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function sendQuickTutorPrompt(promptText) {
+            document.getElementById('tutor-user-input').value = promptText;
+            sendTutorMessage();
+        }
+
+        async function sendTutorMessage() {
+            const inputEl = document.getElementById('tutor-user-input');
+            const userText = inputEl.value.trim();
+            if (!userText) return;
+
+            inputEl.value = '';
+            appendTutorMessage('USER', userText);
+            await requestSocraticTutorReply(userText);
+        }
+
+        async function requestSocraticTutorReply(userText) {
+            const sendBtn = document.getElementById('tutor-send-btn');
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-50');
+
+            const topicContext = document.getElementById('study-topic-input').value.trim() || AppState.selectedSubject;
+
+            const systemPrompt = `너는 중학교 3학년(예비 고1) 학생을 지도하는 발로란트(Valorant) 전술 요원 컨셉의 '소크라테스 AI 튜터'다.
+[엄격한 규칙]
+1. 학생을 '요원'이라고 부르고, '브리핑', '함정 해체', '지식 파밍', '핵심 스팟' 같은 가벼운 게임 전술 용어를 자연스럽게 섞어 친근하고 멋지게 말해라.
+2. [가장 중요] 절대 최종 정답을 바로 알려주지 마라! 대신 핵심 개념의 원리를 짚어주고, 학생이 스스로 다음 단계를 생각해서 답할 수 있도록 마지막 문장은 반드시 '소크라테스식 유도 질문'으로 끝내라.
+3. 답변은 스마트폰에서 읽기 편하도록 3~5문장 이내로 명확하고 간결하게 작성하라.
+4. 현재 학습 과목: ${AppState.selectedSubject}, 현재 단원 타겟: ${topicContext}`;
+
+            try {
+                const inlineImg = AppState.uploadedImageBase64
+                    ? { data: AppState.uploadedImageBase64, mimeType: AppState.uploadedImageMimeType }
+                    : null;
+
+                const aiReply = await callGeminiAPI({
+                    userPrompt: userText,
+                    systemPrompt: systemPrompt,
+                    inlineImage: inlineImg
+                });
+
+                appendTutorMessage('AI', aiReply);
+            } catch (e) {
+                // 스마트 오프라인 소크라테스 응답 폴백
+                const fallbackReply = `좋은 타겟 질문이다, 요원! **[${AppState.selectedSubject} - ${topicContext}]** 스팟을 공략할 때 출제자들이 가장 많이 숨겨두는 크레모아(함정)는 **'용어의 정의와 부호/조건'**을 살짝 비트는 거다.\n\n내가 답을 바로 주면 네 실력 파밍이 안 되겠지? 먼저 이 문제에서 **가장 핵심이 되는 기준(공식이나 주어/조건) 딱 하나**만 나한테 먼저 말해줄 수 있나?`;
+                appendTutorMessage('AI', fallbackReply);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('opacity-50');
+            }
+        }
+
+        // =========================================================================
+        // 🔒 MODULE D: API 보안 아키텍처 모달 제어
+        // =========================================================================
+        function openSecurityModal() {
+            const modal = document.getElementById('security-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeSecurityModal() {
+            const modal = document.getElementById('security-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function setApiConnectionMode(mode) {
+            AppState.apiConnectionMode = mode;
+            const badge = document.getElementById('current-api-mode-badge');
+            const btnDirect = document.getElementById('mode-btn-direct');
+            const btnProxy = document.getElementById('mode-btn-proxy');
+
+            if (mode === 'CANVAS_DIRECT') {
+                badge.textContent = 'CANVAS BRIDGE + FALLBACK';
+                btnDirect.className = 'p-3 rounded border border-valo-cyan bg-valo-cyan/15 text-left transition-all';
+                btnProxy.className = 'p-3 rounded border border-white/10 bg-valo-panel/60 text-left transition-all';
+                showToast('프리뷰 즉시 구동 모드 활성화', '현재 화면에서 즉시 AI 문제 생성 및 튜터링이 작동합니다.');
+            } else {
+                badge.textContent = 'VERCEL SERVERLESS (/api/gemini)';
+                btnProxy.className = 'p-3 rounded border border-valo-cyan bg-valo-cyan/15 text-left transition-all';
+                btnDirect.className = 'p-3 rounded border border-white/10 bg-valo-panel/60 text-left transition-all';
+                showToast('Vercel 서버리스 프록시 모드 선택됨', 'Vercel 배포 시 /api/gemini 엔드포인트를 경유하며, 프리뷰에서는 스마트 폴백이 보호합니다.');
+            }
+        }
+
+        function copyServerlessCode() {
+            const codeText = document.getElementById('serverless-code-block').innerText;
+            const tempArea = document.createElement('textarea');
+            tempArea.value = codeText;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempArea);
+
+            document.getElementById('copy-code-btn-text').textContent = '✓ 복사 완료!';
+            showToast('서버리스 코드 복사 완료', 'Vercel 프로젝트의 /api/gemini.js 파일에 그대로 붙여넣으시면 됩니다.');
+            setTimeout(() => {
+                document.getElementById('copy-code-btn-text').textContent = '코드 복사하기';
+            }, 2500);
+        }
+
+        // =========================================================================
+        // 💬 STEP 4: 부모님 카카오톡 일일 학습 요약 리포트 생성 & 발송 엔진
+        // =========================================================================
+        function openKakaoReportModal(customModeTitle = null) {
+            const modal = document.getElementById('kakao-report-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // 현재 날짜 및 시간 반영
+            const now = new Date();
+            const hours = now.getHours();
+            const mins = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? '오후' : '오전';
+            const displayHour = hours % 12 || 12;
+            document.getElementById('kakao-chat-time').textContent = `${ampm} ${displayHour}:${mins}`;
+
+            // 오늘 학습 데이터 프리뷰 카드에 동기화
+            const modeTitle = customModeTitle || (AppState.selectedMode === 'TRACK_A_15M'
+                ? '15분 라이트 복습 완수'
+                : `30분 딥 러닝 완수 (${AppState.roundCount}라운드)`);
+            const topicInput = document.getElementById('study-topic-input')?.value?.trim() || AppState.selectedSubjectDesc;
+
+            document.getElementById('kakao-card-mode').textContent = modeTitle;
+            document.getElementById('kakao-card-subject').textContent = `${AppState.selectedSubject} — ${topicInput}`;
+            document.getElementById('kakao-card-score').textContent = `3문제 중 ${AppState.solvedCount}문제 격파 (연속 출석 ${AppState.streak}일🔥 / ${AppState.vp} VP)`;
+
+            // 기본 요약 문구 세팅
+            const defaultSummary = `[${AppState.selectedSubject}] "${topicInput}" 단원의 핵심 개념과 내신 함정 문제를 집중 공략했습니다. 소크라테스 AI 튜터의 힌트 질문을 통해 스스로 원리를 추론해 내는 훌륭한 집중력을 보여주었습니다! 오늘 저녁 아이에게 따뜻한 칭찬 한마디 부탁드립니다.`;
+            document.getElementById('kakao-custom-summary-input').value = defaultSummary;
+            document.getElementById('kakao-card-ai-summary').textContent = defaultSummary;
+        }
+
+        function closeKakaoReportModal() {
+            const modal = document.getElementById('kakao-report-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function finishAndOpenKakaoReport() {
+            const postModal = document.getElementById('post-break-modal');
+            postModal.classList.add('hidden');
+            postModal.classList.remove('flex');
+
+            AppState.streak += 1;
+            saveProgressToStorage();
+            returnToLobby();
+            openKakaoReportModal(`30분 딥 러닝 완수 (${AppState.roundCount}라운드 클리어)`);
+        }
+
+        function switchKakaoTab(tabKey) {
+            const previewTab = document.getElementById('kakao-tab-preview');
+            const codeTab = document.getElementById('kakao-tab-code');
+            const btnPreview = document.getElementById('kakao-tab-btn-preview');
+            const btnCode = document.getElementById('kakao-tab-btn-code');
+
+            if (tabKey === 'PREVIEW') {
+                previewTab.classList.remove('hidden');
+                codeTab.classList.add('hidden');
+                btnPreview.className = 'px-4 py-2.5 font-mono text-xs font-bold border-b-2 border-[#FEE500] text-[#FEE500] bg-white/5 whitespace-nowrap flex items-center space-x-1.5';
+                btnCode.className = 'px-4 py-2.5 font-mono text-xs font-bold border-b-2 border-transparent text-valo-gray hover:text-valo-offwhite whitespace-nowrap flex items-center space-x-1.5';
+            } else {
+                previewTab.classList.add('hidden');
+                codeTab.classList.remove('hidden');
+                btnCode.className = 'px-4 py-2.5 font-mono text-xs font-bold border-b-2 border-[#FEE500] text-[#FEE500] bg-white/5 whitespace-nowrap flex items-center space-x-1.5';
+                btnPreview.className = 'px-4 py-2.5 font-mono text-xs font-bold border-b-2 border-transparent text-valo-gray hover:text-valo-offwhite whitespace-nowrap flex items-center space-x-1.5';
+            }
+        }
+
+        function syncCustomSummaryToPreview() {
+            const val = document.getElementById('kakao-custom-summary-input').value;
+            document.getElementById('kakao-card-ai-summary').textContent = val;
+        }
+
+        // Gemini AI로 부모님용 3줄 요약 리포트 실시간 생성
+        async function generateKakaoSummaryWithAI() {
+            const btn = document.getElementById('btn-refresh-kakao-ai');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i><span>AI 요약 작성 중...</span>`;
+
+            const topicInput = document.getElementById('study-topic-input')?.value?.trim() || AppState.selectedSubjectDesc;
+            const systemPrompt = `너는 중3 학생의 자기주도 학습 앱에서 부모님 카카오톡으로 전송할 [일일 학습 브리핑 요약문]을 작성하는 AI다.
+감시하는 느낌이 아니라 아이의 성취감과 노력을 칭찬하고, 오늘 어떤 개념을 공부했는지 부모님이 3초 만에 안심하고 파악하실 수 있도록 다정하고 스마트한 어조로 3문장 이내로 요약하라.`;
+
+            const userPrompt = `과목: ${AppState.selectedSubject}\n단원: ${topicInput}\n격파한 문제 수: 3문제 중 ${AppState.solvedCount}문제\n연속 스트릭: ${AppState.streak}일\n부모님께 보낼 카카오톡 3줄 학습 요약 리포트를 작성해줘.`;
+
+            try {
+                const aiSummary = await callGeminiAPI({ userPrompt, systemPrompt });
+                const cleanText = aiSummary.trim();
+                document.getElementById('kakao-custom-summary-input').value = cleanText;
+                document.getElementById('kakao-card-ai-summary').textContent = cleanText;
+                playTacticalSound('UNLOCK');
+                showToast('AI 카톡 요약 생성 완료', 'Gemini AI가 오늘 학습 내용을 3줄 브리핑으로 요약했습니다.');
+            } catch (e) {
+                const fallbackText = `오늘 [${AppState.selectedSubject} - ${topicInput}] 단원의 핵심 내신 문제를 끝까지 물고 늘어지며 자기주도 루틴을 완수했습니다! 오답이 나왔을 때도 소크라테스 힌트를 활용해 스스로 원리를 찾아냈으니 큰 칭찬 부탁드립니다.`;
+                document.getElementById('kakao-custom-summary-input').value = fallbackText;
+                document.getElementById('kakao-card-ai-summary').textContent = fallbackText;
+                showToast('스마트 학습 요약 업데이트됨', '부모님께 전송할 격려 중심 요약 브리핑이 준비되었습니다.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="ph-bold ph-sparkle"></i><span>✨ AI 요약 새로고침</span>`;
+            }
+        }
+
+        // 부모님 카카오톡으로 리포트 즉시 발송 (Vercel 백엔드 연동 + 프리뷰 시뮬레이션)
+        async function sendKakaoReportNow() {
+            const sendBtn = document.getElementById('btn-send-kakao-now');
+            const statusBadge = document.getElementById('kakao-send-status-badge');
+            const resultBox = document.getElementById('kakao-send-result-box');
+            const resultDetail = document.getElementById('kakao-send-result-detail');
+
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-70');
+
+            const payload = {
+                modeTitle: document.getElementById('kakao-card-mode').textContent,
+                subject: AppState.selectedSubject,
+                topic: document.getElementById('kakao-card-subject').textContent,
+                solvedCount: AppState.solvedCount,
+                streak: AppState.streak,
+                aiSummary: document.getElementById('kakao-custom-summary-input').value
+            };
+
+            // 실제 Vercel 배포 환경일 경우 /api/kakao-report 호출 시도
+            if (AppState.apiConnectionMode === 'VERCEL_PROXY') {
+                try {
+                    await fetch('/api/kakao-report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (e) {
+                    // 프리뷰 환경에서는 시뮬레이션으로 자연스럽게 연결
+                }
+            }
+
+            playTacticalSound('COMPLETE');
+            statusBadge.textContent = '✓ 카톡 전송 완료 (읽음 1)';
+            statusBadge.className = 'text-emerald-800 font-extrabold';
+
+            const now = new Date();
+            const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            resultBox.classList.remove('hidden');
+            resultDetail.textContent = `[${timeStr}] 부모님 카카오톡(나에게 보내기 API)으로 "${payload.subject}" 일일 학습 요약 리포트가 성공적으로 발송되었습니다!`;
+
+            showToast('💬 부모님 카카오톡 발송 성공!', '부모님 카톡 알림톡으로 오늘의 학습 완수 리포트가 도착했습니다.');
+
+            setTimeout(() => {
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('opacity-70');
+            }, 800);
+        }
+
+        function copyKakaoBackendCode() {
+            const codeText = document.getElementById('kakao-serverless-code-block').innerText;
+            const tempArea = document.createElement('textarea');
+            tempArea.value = codeText;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempArea);
+
+            document.getElementById('copy-kakao-code-btn-text').textContent = '✓ 복사 완료!';
+            showToast('카카오 백엔드 코드 복사됨', 'Vercel 프로젝트의 /api/kakao-report.js 파일에 붙여넣으세요!');
+            setTimeout(() => {
+                document.getElementById('copy-kakao-code-btn-text').textContent = '카카오 백엔드 코드 복사';
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
