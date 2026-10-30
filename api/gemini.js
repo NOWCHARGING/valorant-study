@@ -11,19 +11,11 @@ export default async function handler(req, res) {
 
   const { subject, topic } = req.body;
 
-  // 답변이 중간에 잘리지 않도록 핵심만 짧고 간결하게 작성하도록 제어하는 프롬프트
-  const prompt = `중학교 3학년 ${subject} 과목 '${topic}' 단원의 내신 객관식 4지선다 3문제를 만들어줘.
-답변이 중간에 잘리지 않도록 문장을 짧게 작성하고, 반드시 아래 JSON 배열 구조만 출력할 것. 다른 텍스트나 설명은 절대 금지.
-[
-  {
-    "level": "하",
-    "q": "문제 내용 (짧게)",
-    "options": ["1번", "2번", "3번", "4번"],
-    "ans": 0,
-    "hint": "사이퍼의 짧은 힌트",
-    "exp": "짧은 정답 해설"
-  }
-]`;
+  // 불필요한 서술을 막고 단답형으로 빠르게 생성하도록 지시
+  const prompt = `중3 ${subject} '${topic}' 단원 객관식 4지선다 3문제(난이도 하,중,상).
+각 항목은 1문장 이내로 아주 짧게 작성해.
+반드시 아래 JSON 배열만 출력해:
+[{"level":"하","q":"문제","options":["보기1","보기2","보기3","보기4"],"ans":0,"hint":"사이퍼 말투 짧은 힌트","exp":"핵심 한줄 해설"}]`;
 
   try {
     const response = await fetch(
@@ -35,8 +27,12 @@ export default async function handler(req, res) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.4,
-            maxOutputTokens: 2500 // ⚠️ 토큰 제한을 넉넉하게 상향하여 중간에 끊기는 현상 원천 차단
+            temperature: 0.2,
+            maxOutputTokens: 1200,
+            // ⚡ 속도 향상의 핵심: 내부 생각(Thinking) 과정을 꺼서 30초 지연을 2~3초로 단축!
+            thinkingConfig: {
+              thinkingBudget: 0
+            }
           }
         })
       }
@@ -47,8 +43,17 @@ export default async function handler(req, res) {
       throw new Error(data.error?.message || 'Gemini API 호출 오류');
     }
 
-    let rawText = data.candidates[0].content.parts[0].text;
-    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+    // 추론 텍스트가 섞여 있을 경우를 대비해 실제 답변 파트만 추출
+    const parts = data.candidates[0].content.parts;
+    const textPart = parts.find(p => !p.thought && p.text) || parts[parts.length - 1];
+    let rawText = textPart.text;
+
+    // 순수 JSON 대괄호 [ ... ] 영역만 안전하게 추출 (파싱 에러 원천 차단)
+    const startIdx = rawText.indexOf('[');
+    const endIdx = rawText.lastIndexOf(']');
+    if (startIdx !== -1 && endIdx !== -1) {
+      rawText = rawText.substring(startIdx, endIdx + 1);
+    }
 
     const questions = JSON.parse(rawText);
     return res.status(200).json({ questions });
