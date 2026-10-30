@@ -9,13 +9,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Vercel에 GEMINI_API_KEY가 설정되지 않았습니다.' });
   }
 
-  const { subject, topic } = req.body;
+  // 프론트엔드에서 과목, 단원명과 함께 '난이도(level)'를 추가로 받아옵니다.
+  const { subject, topic, level } = req.body;
 
-  // 불필요한 서술을 막고 단답형으로 빠르게 생성하도록 지시
-  const prompt = `중3 ${subject} '${topic}' 단원 객관식 4지선다 3문제(난이도 하,중,상).
-각 항목은 1문장 이내로 아주 짧게 작성해.
-반드시 아래 JSON 배열만 출력해:
-[{"level":"하","q":"문제","options":["보기1","보기2","보기3","보기4"],"ans":0,"hint":"사이퍼 말투 짧은 힌트","exp":"핵심 한줄 해설"}]`;
+  // 딱 1문제만 요청하도록 프롬프트를 극도로 다이어트했습니다.
+  const prompt = `너는 중학교 3학년 ${subject} 과목 일타 강사야. '${topic}' 단원의 객관식 4지선다 딱 1문제를 출제해.
+목표 난이도: ${level}
+반드시 아래 JSON 배열 포맷(단 1개의 문제 객체만 포함)으로만 출력할 것. 마크다운(\`\`\`)이나 다른 텍스트는 절대 금지.
+[
+  {
+    "level": "${level}",
+    "q": "문제 내용 작성",
+    "options": ["보기1", "보기2", "보기3", "보기4"],
+    "ans": 0,
+    "hint": "사이퍼 요원 컨셉의 뼈때리는 힌트 1줄",
+    "exp": "명쾌한 해설 1줄"
+  }
+]`;
 
   try {
     const response = await fetch(
@@ -27,12 +37,9 @@ export default async function handler(req, res) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.2,
-            maxOutputTokens: 1200,
-            // ⚡ 속도 향상의 핵심: 내부 생각(Thinking) 과정을 꺼서 30초 지연을 2~3초로 단축!
-            thinkingConfig: {
-              thinkingBudget: 0
-            }
+            temperature: 0.7, 
+            maxOutputTokens: 600, // 1문제 분량이므로 토큰을 대폭 줄여 출력 속도 극대화
+            thinkingConfig: { thinkingBudget: 0 } // 내부 추론 끄기
           }
         })
       }
@@ -40,21 +47,13 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Gemini API 호출 오류');
+      throw new Error(data.error?.message || 'API 오류');
     }
 
-    // 추론 텍스트가 섞여 있을 경우를 대비해 실제 답변 파트만 추출
-    const parts = data.candidates[0].content.parts;
-    const textPart = parts.find(p => !p.thought && p.text) || parts[parts.length - 1];
-    let rawText = textPart.text;
-
-    // 순수 JSON 대괄호 [ ... ] 영역만 안전하게 추출 (파싱 에러 원천 차단)
-    const startIdx = rawText.indexOf('[');
-    const endIdx = rawText.lastIndexOf(']');
-    if (startIdx !== -1 && endIdx !== -1) {
-      rawText = rawText.substring(startIdx, endIdx + 1);
-    }
-
+    let rawText = data.candidates[0].content.parts.find(p => !p.thought && p.text)?.text || data.candidates[0].content.parts[0].text;
+    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    // 1문제만 들어있는 배열을 반환합니다.
     const questions = JSON.parse(rawText);
     return res.status(200).json({ questions });
   } catch (error) {
