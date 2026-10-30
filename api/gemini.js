@@ -11,6 +11,7 @@ export default async function handler(req, res) {
 
   const { subject, topic } = req.body;
 
+  // AI가 답변을 중간에 끊어먹지 않도록 간결하고 엄격하게 제어하는 프롬프트
   const prompt = `중학교 3학년 ${subject} 과목 '${topic}' 단원의 내신 객관식 4지선다 3문제를 만들어줘.
 반드시 아래 JSON 배열 구조만 출력할 것. 다른 텍스트나 설명은 절대 금지.
 [
@@ -25,7 +26,6 @@ export default async function handler(req, res) {
 ]`;
 
   try {
-    // ⚠️ 트래픽 과부하가 없는 가장 안정적인 gemini-1.5-flash 모델로 변경
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
       {
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.5,
+            temperature: 0.5, // 난수성을 낮춰서 문법 오류 확률 최소화
             maxOutputTokens: 1500
           }
         })
@@ -48,6 +48,8 @@ export default async function handler(req, res) {
     }
 
     let rawText = data.candidates[0].content.parts[0].text;
+    
+    // 마크다운 및 불필요한 공백 제거
     rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     const questions = JSON.parse(rawText);
