@@ -25,9 +25,9 @@ export default async function handler(req, res) {
 ]`;
 
   try {
-    // ⚠️ 트래픽 과부하가 없는 가장 안정적인 gemini-1.5-flash 모델로 변경
+    // ⚠️ 최신 표준 모델명인 gemini-2.5-flash로 적용
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
