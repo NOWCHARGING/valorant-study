@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>VALO-STUDY // Ver 1.2</title>
+  <title>VALO-STUDY // Ver 1.2 Final</title>
   <style>
     :root {
       --bg-dark: #0f1923;
@@ -44,6 +44,7 @@
       font-size: 1.15rem;
       letter-spacing: 1px;
       color: var(--valo-red);
+      cursor: pointer;
     }
     .streak-badge {
       background: rgba(0, 245, 212, 0.12);
@@ -54,7 +55,7 @@
       font-size: 0.8rem;
       font-weight: 700;
     }
-    /* 중앙 싱글뷰 영역 (탭 전환) */
+    /* 중앙 싱글뷰 영역 */
     main {
       flex: 1;
       overflow-y: auto;
@@ -71,7 +72,7 @@
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    /* 카드 공통 디자인 */
+    /* 카드 디자인 */
     .card {
       background: var(--card-bg);
       border-left: 4px solid var(--valo-red);
@@ -85,7 +86,6 @@
       margin-bottom: 10px;
       color: var(--valo-cyan);
     }
-    /* 타이머 영역 */
     .timer-display {
       font-size: 3.2rem;
       font-weight: 900;
@@ -127,8 +127,7 @@
       background: var(--valo-cyan);
       color: #0f1923;
     }
-    /* 입력 폼 */
-    select, input {
+    select, input, textarea {
       width: 100%;
       padding: 12px;
       margin-bottom: 10px;
@@ -192,9 +191,9 @@
     }
     .nav-item {
       flex: 1;
-      padding: 14px 0;
+      padding: 12px 0;
       text-align: center;
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       font-weight: 800;
       color: var(--text-dim);
       background: none;
@@ -216,12 +215,12 @@
 <body>
 
   <header>
-    <div class="logo">VALO-STUDY // V1.2</div>
+    <div class="logo" onclick="switchTab('tab-timer', document.querySelectorAll('.nav-item')[0])">VALO-STUDY // V1.2</div>
     <div class="streak-badge" id="streakCount">⚡ 1일 연속 달성</div>
   </header>
 
   <main>
-    <!-- 탭 1: 전술 타이머 (15분/30분) -->
+    <!-- 탭 1: 전술 타이머 -->
     <section id="tab-timer" class="tab-section active">
       <div class="card">
         <div class="card-title">🎯 오늘의 전술 모드 선택</div>
@@ -237,17 +236,17 @@
       </div>
 
       <div class="card">
-        <div class="card-title">💡 요원 브리핑</div>
-        <p style="font-size:0.9rem; line-height:1.5; color:#ccc;">
-          피곤한 날엔 <b>15분 방어선</b>만 사수해도 스트릭이 유지됩니다. 집중이 끝난 후 <b>[AI 훈련소]</b> 탭으로 이동해 오늘 배운 단원의 함정 3문제를 격파하세요!
-        </p>
+        <div class="card-title">📸 학교 노트/학습 인증 (Vision)</div>
+        <p style="font-size:0.88rem; color:#ccc; margin-bottom:10px;">오늘 학교나 학원에서 배운 교과서, 필기 사진을 찍어 올려 기록을 남기세요.</p>
+        <input type="file" accept="image/*" capture="environment" id="studyPhoto" onchange="handlePhotoUpload(event)" />
+        <div id="photoStatus" style="font-size:0.85rem; color:var(--valo-cyan); margin-top:6px;"></div>
       </div>
     </section>
 
-    <!-- 탭 2: AI 실전 문제 (초절약 원샷 호출) -->
+    <!-- 탭 2: AI 훈련소 -->
     <section id="tab-ai" class="tab-section">
       <div class="card">
-        <div class="card-title">🤖 내신 함정 3문제 (원샷 생성)</div>
+        <div class="card-title">🤖 내신 함정 3문제 (실시간 생성)</div>
         <select id="subjectSelect">
           <option value="수학">수학 (중3 내신)</option>
           <option value="영어">영어 (중3 문법/독해)</option>
@@ -255,45 +254,47 @@
           <option value="역사">역사 (중3 핵심)</option>
         </select>
         <input type="text" id="topicInput" placeholder="단원명 입력 (예: 원주각의 성질, 관계대명사)" value="원주각의 성질" />
-        <button class="btn-red" id="genBtn" onclick="generateQuestions()">⚡ AI 문제 출제 (1회 통합 호출)</button>
+        <button class="btn-red" id="genBtn" onclick="generateQuestions()">⚡ AI 문제 출제하기</button>
         <div class="cost-info" id="cacheNotice">💾 생성된 문제는 자동 저장되어 새로고침해도 토큰이 소모되지 않습니다.</div>
       </div>
 
       <div id="quizContainer"></div>
     </section>
 
-    <!-- 탭 3: 작전 보고 (다음 스텝 연동 예정) -->
+    <!-- 탭 3: 작전 보고 -->
     <section id="tab-report" class="tab-section">
       <div class="card">
         <div class="card-title">📊 오늘의 작전 수행 기록</div>
-        <p style="margin-bottom: 12px; font-size:0.95rem;">
-          • 푼 문제 수: <b id="solvedCount" style="color:var(--valo-cyan)">0</b> / 3 문제<br/>
-          • 정답 적중: <b id="correctCount" style="color:var(--valo-cyan)">0</b> 문제
+        <p style="margin-bottom: 12px; font-size:0.95rem; line-height:1.6;">
+          • 공부 소요 시간: <b id="studyTimeSpent" style="color:var(--valo-cyan)">0분 0초</b><br/>
+          • 노트 인증 상태: <b id="photoCertStatus" style="color:#aaa">미인증</b><br/>
+          • 문제 풀이 점수: <b id="solvedCount" style="color:var(--valo-cyan)">0</b> / 3 정답 적중
         </p>
-        <button class="btn-outline" onclick="alert('Step 4에서 부모님 카카오톡 자동 발송 기능이 연결됩니다!')">💬 부모님 카톡으로 3초 브리핑 전송</button>
+        <button class="btn-red" onclick="sendKakaoReport()">💬 부모님 카톡으로 최종 브리핑 전송</button>
       </div>
     </section>
   </main>
 
   <nav>
-    <button class="nav-item active" onclick="switchTab('tab-timer', this)">⏱️ 전술 타이머</button>
+    <button class="nav-item active" onclick="switchTab('tab-timer', this)">⏱️ 타이머</button>
     <button class="nav-item" onclick="switchTab('tab-ai', this)">🔫 AI 훈련소</button>
     <button class="nav-item" onclick="switchTab('tab-report', this)">📡 작전 보고</button>
   </nav>
 
   <script>
-    // 탭 전환 로직 (싱글뷰)
+    // 싱글뷰 탭 전환 로직
     function switchTab(tabId, btnEl) {
       document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
-      btnEl.classList.add('active');
+      if (btnEl) btnEl.classList.add('active');
     }
 
-    // 타이머 로직
+    // 타이머 및 소요 시간 측정 로직
     let timeLeft = 15 * 60;
     let timerId = null;
     let currentMode = 15;
+    let secondsElapsed = 0; // 아이가 공부한 실제 소요 시간 누적
 
     function setTimerMode(min) {
       if (timerId) toggleTimer();
@@ -321,11 +322,14 @@
         timerId = setInterval(() => {
           if (timeLeft > 0) {
             timeLeft--;
+            secondsElapsed++;
             updateTimerDisplay();
           } else {
             clearInterval(timerId);
             timerId = null;
-            alert('🎉 목표 시간 달성! AI 훈련소에서 확인 문제를 풀어보세요.');
+            alert('🎉 목표 시간 달성! AI 훈련소로 이동하여 문제를 풀어보세요.');
+            // 요청사항 1: 타이머 완료 시 AI 훈련소로 자동 전환
+            switchTab('tab-ai', document.querySelectorAll('.nav-item')[1]);
           }
         }, 1000);
       }
@@ -338,7 +342,17 @@
       updateTimerDisplay();
     }
 
-    // AI 문제 생성 및 로컬 캐싱 로직 (토큰 절약 핵심)
+    // 노트/사진 인증 처리
+    function handlePhotoUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('photoStatus').textContent = `✅ 인증 완료: ${file.name}`;
+        document.getElementById('photoCertStatus').textContent = '인증 완료 (사진 등록됨)';
+        document.getElementById('photoCertStatus').style.color = 'var(--valo-cyan)';
+      }
+    }
+
+    // AI 문제 생성 및 쿨타임 제거
     let solved = 0;
     let correct = 0;
 
@@ -346,7 +360,7 @@
       const savedQuiz = localStorage.getItem('valo_cached_quiz');
       if (savedQuiz) {
         renderQuiz(JSON.parse(savedQuiz));
-        document.getElementById('cacheNotice').textContent = '✅ 이전 생성 문제를 메모리에서 불러왔습니다 (API 소모 0)';
+        document.getElementById('cacheNotice').textContent = '💾 캐시된 문제 로드 완료 (토큰 소모 없음)';
       }
     });
 
@@ -370,30 +384,21 @@
 
         if (!res.ok) throw new Error(data.error || '오류 발생');
 
-        // 로컬 스토리지에 캐싱하여 새로고침 시 재호출 방지
         localStorage.setItem('valo_cached_quiz', JSON.stringify(data.questions));
         solved = 0;
         correct = 0;
         updateScoreBoard();
         renderQuiz(data.questions);
 
-        // 30초 쿨타임 적용 (연타로 인한 토큰 낭비 방지)
-        let cooldown = 30;
-        const coolInterval = setInterval(() => {
-          cooldown--;
-          if (cooldown > 0) {
-            btn.textContent = `⚡ 재출제 대기 (${cooldown}초)`;
-          } else {
-            clearInterval(coolInterval);
-            btn.disabled = false;
-            btn.textContent = '⚡ 새 문제 강제 출제 (1회 호출)';
-          }
-        }, 1000);
+        // 요청사항 3: 30초 강제 대기 제거, 곧바로 다시 출제 가능하도록 버튼 복구
+        btn.disabled = false;
+        btn.textContent = '⚡ 새 문제 출제하기';
+        document.getElementById('cacheNotice').textContent = '✅ 최신 문제 생성 완료';
 
       } catch (err) {
         alert('문제 생성 실패: ' + err.message);
         btn.disabled = false;
-        btn.textContent = '⚡ AI 문제 출제 (1회 통합 호출)';
+        btn.textContent = '⚡ AI 문제 출제하기';
       }
     }
 
@@ -420,7 +425,6 @@
       });
     }
 
-    // 추가 API 호출 없이 미리 받아온 힌트/해설 즉시 출력
     window.checkAnswer = function(qIdx, selectedIdx, ansIdx, btnEl) {
       const questions = JSON.parse(localStorage.getItem('valo_cached_quiz'));
       const item = questions[qIdx];
@@ -439,7 +443,7 @@
         }
       } else {
         btnEl.classList.add('wrong');
-        feedbackBox.innerHTML = `🕵️‍♂️ <b>사이퍼의 힌트 (추가 API 소모 없음):</b><br/>"${item.hint}"`;
+        feedbackBox.innerHTML = `🕵️‍♂️ <b>사이퍼의 힌트:</b><br/>"${item.hint}"`;
         if (!parentCard.dataset.done) {
           solved++;
           parentCard.dataset.done = 'true';
@@ -449,8 +453,17 @@
     };
 
     function updateScoreBoard() {
-      document.getElementById('solvedCount').textContent = solved;
-      document.getElementById('correctCount').textContent = correct;
+      document.getElementById('solvedCount').textContent = correct;
+      const minVal = Math.floor(secondsElapsed / 60);
+      const secVal = secondsElapsed % 60;
+      document.getElementById('studyTimeSpent').textContent = `${minVal}분 ${secVal}초`;
+    }
+
+    // 카카오톡 리포트 전송 모의 함수 (Step 4 연동용)
+    function sendKakaoReport() {
+      const minVal = Math.floor(secondsElapsed / 60);
+      const secVal = secondsElapsed % 60;
+      alert(`[카카오톡 알림톡 전송 완료]\n\n• 총 학습 시간: ${minVal}분 ${secVal}초\n• 문제 정답 수: ${correct} / 3\n• 부모님 카톡으로 요약 리포트가 전송되었습니다!`);
     }
   </script>
 </body>
