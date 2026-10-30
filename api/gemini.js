@@ -36,7 +36,7 @@ export default async function handler(req, res) {
           generationConfig: {
             responseMimeType: "application/json",
             temperature: 0.4,
-            maxOutputTokens: 2500 // ⚠️ 토큰 제한을 넉넉하게 상향하여 중간에 끊기는 현상 원천 차단
+            maxOutputTokens: 800 // ⚠️ 토큰 제한을 넉넉하게 상향하여 중간에 끊기는 현상 원천 차단
           }
         })
       }
