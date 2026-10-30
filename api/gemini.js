@@ -11,21 +11,21 @@ export default async function handler(req, res) {
 
   const { subject, topic } = req.body;
 
+  // 답변이 중간에 잘리지 않도록 핵심만 짧고 간결하게 작성하도록 제어하는 프롬프트
   const prompt = `중학교 3학년 ${subject} 과목 '${topic}' 단원의 내신 객관식 4지선다 3문제를 만들어줘.
-반드시 아래 JSON 배열 구조만 출력할 것. 다른 텍스트나 설명은 절대 금지.
+답변이 중간에 잘리지 않도록 문장을 짧게 작성하고, 반드시 아래 JSON 배열 구조만 출력할 것. 다른 텍스트나 설명은 절대 금지.
 [
   {
     "level": "하",
-    "q": "문제 내용",
-    "options": ["1번 보기", "2번 보기", "3번 보기", "4번 보기"],
+    "q": "문제 내용 (짧게)",
+    "options": ["1번", "2번", "3번", "4번"],
     "ans": 0,
-    "hint": "사이퍼의 힌트 (1문장)",
-    "exp": "정답 해설 (1문장)"
+    "hint": "사이퍼의 짧은 힌트",
+    "exp": "짧은 정답 해설"
   }
 ]`;
 
   try {
-    // ⚠️ 구글 권장 최신 표준 모델명인 gemini-3.8-flash 적용
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
       {
@@ -35,8 +35,8 @@ export default async function handler(req, res) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.5,
-            maxOutputTokens: 1500
+            temperature: 0.4,
+            maxOutputTokens: 2500 // ⚠️ 토큰 제한을 넉넉하게 상향하여 중간에 끊기는 현상 원천 차단
           }
         })
       }
