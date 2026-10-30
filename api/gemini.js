@@ -11,13 +11,21 @@ export default async function handler(req, res) {
 
   const { subject, topic } = req.body;
 
-  const prompt = `중학교 3학년 ${subject} 과목 '${topic}' 단원의 내신 대비 객관식 4지선다 3문제를 출제해줘.
-난이도는 하, 중, 상(내신 함정 포함) 순서.
-오답 시 제공할 소크라테스식 힌트(발로란트 요원 '사이퍼' 말투, 예: "요원, 이 조건을 다시 볼까?")와 핵심 해설을 포함해.
-반드시 다른 설명 없이 순수한 JSON 배열 포맷( [ { ... } ] )으로만 응답해. 마크다운 백틱(\`\`\` 등)도 절대 붙이지 마.`;
+  // AI가 답변을 중간에 끊어먹지 않도록 간결하고 엄격하게 제어하는 프롬프트
+  const prompt = `중학교 3학년 ${subject} 과목 '${topic}' 단원의 내신 객관식 4지선다 3문제를 만들어줘.
+반드시 아래 JSON 배열 구조만 출력할 것. 다른 텍스트나 설명은 절대 금지.
+[
+  {
+    "level": "하",
+    "q": "문제 내용",
+    "options": ["1번 보기", "2번 보기", "3번 보기", "4번 보기"],
+    "ans": 0,
+    "hint": "사이퍼의 힌트 (1문장)",
+    "exp": "정답 해설 (1문장)"
+  }
+]`;
 
   try {
-    // ⚠️ 주의: 아래 fetch 주소는 반드시 백틱(`` ` ``)으로 감싸져 있어야 ${apiKey} 변수가 정상 작동합니다!
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
       {
@@ -27,8 +35,8 @@ export default async function handler(req, res) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.7,
-            maxOutputTokens: 1200
+            temperature: 0.5, // 난수성을 낮춰서 문법 오류 확률 최소화
+            maxOutputTokens: 1500
           }
         })
       }
@@ -40,6 +48,8 @@ export default async function handler(req, res) {
     }
 
     let rawText = data.candidates[0].content.parts[0].text;
+    
+    // 마크다운 및 불필요한 공백 제거
     rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     const questions = JSON.parse(rawText);
