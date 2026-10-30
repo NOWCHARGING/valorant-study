@@ -17,8 +17,9 @@ export default async function handler(req, res) {
 반드시 다른 설명 없이 순수한 JSON 배열 포맷( [ { ... } ] )으로만 응답해. 마크다운 백틱(\`\`\` 등)도 절대 붙이지 마.`;
 
   try {
+    // ⚠️ 주의: 아래 fetch 주소는 반드시 백틱(`` ` ``)으로 감싸져 있어야 ${apiKey} 변수가 정상 작동합니다!
     const response = await fetch(
-      `[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=$){apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -39,8 +40,6 @@ export default async function handler(req, res) {
     }
 
     let rawText = data.candidates[0].content.parts[0].text;
-    
-    // 혹시라도 AI가 마크다운 코드 블록(```json ... ```)을 포함해서 보냈을 경우를 대비한 안전 필터
     rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     const questions = JSON.parse(rawText);
