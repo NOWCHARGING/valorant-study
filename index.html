@@ -795,6 +795,26 @@
                     </div>
                 </div>
             </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-valo-card border border-valo-red/35 rounded p-4 sm:p-5 flex flex-col justify-between gap-4">
+                    <div>
+                        <div class="font-mono text-xs text-valo-red font-bold">CYPHER // CLUTCH MODE</div>
+                        <h3 class="font-display text-xl font-bold text-valo-offwhite mt-1">1:1 클러치 모드</h3>
+                        <p class="text-xs text-valo-gray mt-1">틀렸던 문제만 다시 풀어 미해결 전술 과제를 정리합니다.</p>
+                        <p id="clutch-task-count" class="font-mono text-xs text-valo-gold mt-2">미해결 과제 0개 · 클러치 RR 0</p>
+                    </div>
+                    <button id="clutch-start-btn" onclick="startClutchMode()" disabled class="px-4 py-2.5 bg-valo-red/20 border border-valo-red/40 text-valo-red disabled:opacity-40 disabled:cursor-not-allowed rounded font-bold text-sm">1:1 클러치 도전</button>
+                </div>
+                <div class="bg-valo-card border border-valo-cyan/35 rounded p-4 sm:p-5 flex flex-col justify-between gap-4">
+                    <div>
+                        <div class="font-mono text-xs text-valo-cyan font-bold">ENGLISH // PATCH INTEL</div>
+                        <h3 class="font-display text-xl font-bold text-valo-offwhite mt-1">영어 전술 분석실</h3>
+                        <p class="text-xs text-valo-gray mt-1">공식 영문 패치노트 기반 지문, 단어 빈칸, 중3 문법 문제를 풉니다.</p>
+                    </div>
+                    <button onclick="openTacticalEnglishLab()" class="px-4 py-2.5 bg-valo-cyan/15 border border-valo-cyan/40 text-valo-cyan hover:bg-valo-cyan/25 rounded font-bold text-sm">오늘의 전술 지문 열기</button>
+                </div>
+            </div>
         </section>
 
         <!-- ========================================================== -->
@@ -815,6 +835,46 @@
                     <input id="curiosity-user-input" type="text" placeholder="무엇이든 질문해 보세요..." onkeydown="if(event.key==='Enter') sendCuriosityMessage()" class="min-w-0 flex-grow bg-valo-dark border border-white/20 focus:border-valo-gold rounded px-3 py-3 text-sm text-valo-offwhite outline-none">
                     <button id="curiosity-send-btn" onclick="sendCuriosityMessage()" class="px-4 py-3 bg-valo-gold hover:opacity-90 text-valo-dark font-bold rounded shrink-0">질문하기</button>
                 </div>
+            </div>
+        </section>
+
+        <section id="clutch-view" class="hidden space-y-5">
+            <div class="bg-valo-card border border-valo-red/40 clip-valo-card p-5 sm:p-7 space-y-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <span class="font-mono text-xs text-valo-red font-bold tracking-widest">CYPHER // 1V1 CLUTCH</span>
+                        <h2 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite mt-1">미해결 전술 과제</h2>
+                        <p id="clutch-progress" class="text-sm text-valo-gray mt-1">오답을 다시 풀어 클러치에 성공하세요.</p>
+                    </div>
+                    <button onclick="closeClutchMode()" class="px-3 py-2 border border-white/20 rounded text-sm text-valo-offwhite whitespace-nowrap">로비로</button>
+                </div>
+                <div class="flex items-center justify-between bg-valo-dark/70 border border-white/10 rounded p-3">
+                    <span class="text-xs text-valo-gray">정답을 맞히면 오답 과제가 해결되고 RR을 얻습니다.</span>
+                    <span id="clutch-rr-display" class="font-mono text-sm font-bold text-valo-gold">0 RR</span>
+                </div>
+                <div id="clutch-question-card" class="bg-valo-dark/60 border border-white/10 rounded p-4 sm:p-5 space-y-4">
+                    <p id="clutch-question-text" class="text-base sm:text-lg font-bold text-valo-offwhite"></p>
+                    <div id="clutch-options" class="grid gap-2"></div>
+                    <p id="clutch-feedback" class="hidden rounded p-3 text-sm" aria-live="polite"></p>
+                    <button id="clutch-check-btn" onclick="checkClutchAnswer()" class="w-full py-3 bg-valo-red hover:bg-valo-redHover text-valo-dark rounded font-bold">정답 확인</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tactical-english-view" class="hidden space-y-5">
+            <div class="bg-valo-card border border-valo-cyan/40 clip-valo-card p-5 sm:p-7 space-y-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <span class="font-mono text-xs text-valo-cyan font-bold tracking-widest">ENGLISH // TACTICAL ANALYSIS</span>
+                        <h2 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite mt-1">영어 전술 분석실</h2>
+                        <p id="tactical-english-status" class="text-sm text-valo-gray mt-1">공식 영문 패치노트에서 오늘의 지문을 불러옵니다.</p>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button id="tactical-english-reload-btn" onclick="loadTacticalEnglishLesson()" class="px-3 py-2 border border-valo-cyan/40 rounded text-sm text-valo-cyan whitespace-nowrap">최신 지문</button>
+                        <button onclick="closeTacticalEnglishLab()" class="px-3 py-2 border border-white/20 rounded text-sm text-valo-offwhite whitespace-nowrap">로비로</button>
+                    </div>
+                </div>
+                <div id="tactical-english-lesson" class="space-y-4"></div>
             </div>
         </section>
 
@@ -1163,6 +1223,7 @@
             selectedSubject: '수학',
             selectedSubjectDesc: '공식 적용 및 내신 함정 문제 격파',
             selectedMode: null,      // 'TRACK_A_15M' or 'TRACK_B_30M'
+            clutchRR: 0,
             timerPhase: 'IDLE',      // 'IDLE', 'FOCUS', 'COOLDOWN'
             roundCount: 1,
             totalSeconds: 0,
@@ -1479,6 +1540,7 @@
                     AppState.streak = parsed.streak ?? 3;
                     AppState.vp = parsed.vp ?? 450;
                     AppState.completedSessions = parsed.completedSessions ?? 0;
+                    AppState.clutchRR = parsed.clutchRR ?? 0;
                     AppState.unlockedSkins = parsed.unlockedSkins ?? ['default'];
                     AppState.equippedSkin = parsed.equippedSkin ?? 'default';
                     AppState.unlockedIcons = parsed.unlockedIcons ?? ['duelist'];
@@ -1496,6 +1558,7 @@
                 streak: AppState.streak,
                 vp: AppState.vp,
                 completedSessions: AppState.completedSessions,
+                clutchRR: AppState.clutchRR,
                 unlockedSkins: AppState.unlockedSkins,
                 equippedSkin: AppState.equippedSkin,
                 unlockedIcons: AppState.unlockedIcons,
@@ -1557,6 +1620,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             loadProgressFromStorage();
             loadAIRequestLog();
+            loadClutchTasks();
             const todayStr = getTodayDateString();
             document.getElementById('modal-today-date').textContent = todayStr.replace(/-/g, '.');
 
@@ -1675,6 +1739,207 @@
                 button.disabled = false;
                 button.classList.remove('opacity-50');
                 input.focus();
+            }
+        }
+
+        let tacticalEnglishLesson = null;
+        let tacticalEnglishStage = 'reading';
+
+        function openTacticalEnglishLab() {
+            document.getElementById('lobby-view').classList.add('hidden');
+            document.getElementById('curiosity-view').classList.add('hidden');
+            document.getElementById('clutch-view').classList.add('hidden');
+            document.getElementById('mission-stage-view').classList.add('hidden');
+            document.getElementById('tactical-english-view').classList.remove('hidden');
+            loadTacticalEnglishLesson();
+        }
+
+        function closeTacticalEnglishLab() {
+            document.getElementById('tactical-english-view').classList.add('hidden');
+            document.getElementById('lobby-view').classList.remove('hidden');
+        }
+
+        function renderTacticalEnglishLesson() {
+            const container = document.getElementById('tactical-english-lesson');
+            container.replaceChildren();
+            if (!tacticalEnglishLesson) return;
+
+            const sourceCard = document.createElement('div');
+            sourceCard.className = 'rounded border border-white/10 bg-valo-dark/70 p-4 space-y-2';
+            const sourceTitle = document.createElement('h3');
+            sourceTitle.className = 'font-bold text-valo-offwhite';
+            sourceTitle.textContent = tacticalEnglishLesson.source.title;
+            const sourceLink = document.createElement('a');
+            sourceLink.href = tacticalEnglishLesson.source.sourceUrl;
+            sourceLink.target = '_blank';
+            sourceLink.rel = 'noopener noreferrer';
+            sourceLink.className = 'text-xs text-valo-cyan underline';
+            sourceLink.textContent = 'Riot Games 공식 영문 원문 열기';
+            sourceCard.append(sourceTitle, sourceLink);
+            container.appendChild(sourceCard);
+
+            const card = document.createElement('div');
+            card.className = 'rounded border border-valo-cyan/25 bg-valo-dark/50 p-4 sm:p-5 space-y-4';
+            const stepTitle = document.createElement('h3');
+            stepTitle.className = 'font-display text-lg font-bold text-valo-cyan';
+            card.appendChild(stepTitle);
+
+            if (tacticalEnglishStage === 'reading') {
+                stepTitle.textContent = '1. 전술 지문 독해';
+                const note = document.createElement('p');
+                note.className = 'text-xs text-valo-gray';
+                note.textContent = '공식 패치노트 내용을 바탕으로 새롭게 쓴 3문장 지문입니다.';
+                const passage = document.createElement('p');
+                passage.className = 'whitespace-pre-line leading-relaxed text-base text-valo-offwhite';
+                passage.textContent = tacticalEnglishLesson.passage;
+                const next = document.createElement('button');
+                next.className = 'w-full rounded bg-valo-cyan px-4 py-3 font-bold text-valo-dark';
+                next.textContent = '단어 빈칸 문제 풀기';
+                next.onclick = () => { tacticalEnglishStage = 'vocabulary'; renderTacticalEnglishLesson(); };
+                card.append(note, passage, next);
+            } else if (tacticalEnglishStage === 'vocabulary' || tacticalEnglishStage === 'grammar') {
+                const vocabulary = tacticalEnglishStage === 'vocabulary';
+                const question = vocabulary ? tacticalEnglishLesson.vocabulary : tacticalEnglishLesson.grammar;
+                const status = vocabulary ? tacticalEnglishLesson.vocabularyStatus : tacticalEnglishLesson.grammarStatus;
+                stepTitle.textContent = vocabulary ? '2. 단어 빈칸 채우기' : '3. 중3 필수 문법 확인';
+                if (!vocabulary) {
+                    const focus = document.createElement('p');
+                    focus.className = 'text-xs text-valo-gold';
+                    focus.textContent = `문법 포인트: ${question.focus}`;
+                    card.appendChild(focus);
+                }
+                const prompt = document.createElement('p');
+                prompt.className = 'font-semibold text-valo-offwhite';
+                prompt.textContent = vocabulary ? question.sentence : question.prompt;
+                card.appendChild(prompt);
+
+                const optionList = document.createElement('div');
+                optionList.className = 'grid gap-2';
+                question.options.forEach((option, index) => {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-start gap-2 rounded border border-white/10 bg-valo-panel/70 p-3 text-sm text-valo-offwhite cursor-pointer hover:border-valo-cyan/50';
+                    const radio = document.createElement('input');
+                    radio.type = 'radio'; radio.name = vocabulary ? 'english-vocabulary-answer' : 'english-grammar-answer';
+                    radio.value = String(index); radio.className = 'mt-0.5 accent-valo-cyan shrink-0';
+                    const text = document.createElement('span'); text.textContent = option;
+                    label.append(radio, text); optionList.appendChild(label);
+                });
+                card.appendChild(optionList);
+
+                if (status === 'wrong') {
+                    const feedback = document.createElement('p');
+                    feedback.className = 'rounded border border-valo-gold/30 bg-valo-gold/10 p-3 text-sm text-valo-gold';
+                    feedback.textContent = `다시 생각해 보세요. ${question.hint}`;
+                    card.appendChild(feedback);
+                } else if (status === 'correct') {
+                    const feedback = document.createElement('p');
+                    feedback.className = 'rounded border border-emerald-400/30 bg-emerald-950/40 p-3 text-sm text-emerald-200';
+                    feedback.textContent = `정답입니다. ${question.explanation}`;
+                    card.appendChild(feedback);
+                }
+
+                const action = document.createElement('button');
+                action.className = 'w-full rounded bg-valo-cyan px-4 py-3 font-bold text-valo-dark';
+                if (status === 'correct') {
+                    action.textContent = vocabulary ? '문법 문제 풀기' : '학습 완료';
+                    action.onclick = () => {
+                        tacticalEnglishStage = vocabulary ? 'grammar' : 'complete';
+                        renderTacticalEnglishLesson();
+                    };
+                } else {
+                    action.textContent = '정답 확인';
+                    action.onclick = () => checkTacticalEnglishAnswer(vocabulary ? 'vocabulary' : 'grammar');
+                }
+                card.appendChild(action);
+            } else {
+                stepTitle.textContent = '전술 분석 완료';
+                const complete = document.createElement('p');
+                complete.className = 'text-valo-offwhite';
+                complete.textContent = '지문 독해, 핵심 단어, 문법 확인을 모두 마쳤습니다.';
+                const again = document.createElement('button');
+                again.className = 'w-full rounded bg-valo-cyan px-4 py-3 font-bold text-valo-dark';
+                again.textContent = '최신 패치노트로 새 지문 만들기';
+                again.onclick = loadTacticalEnglishLesson;
+                card.append(complete, again);
+            }
+            container.appendChild(card);
+        }
+
+        function checkTacticalEnglishAnswer(type) {
+            const vocabulary = type === 'vocabulary';
+            const question = vocabulary ? tacticalEnglishLesson.vocabulary : tacticalEnglishLesson.grammar;
+            const inputName = vocabulary ? 'english-vocabulary-answer' : 'english-grammar-answer';
+            const selected = document.querySelector(`input[name="${inputName}"]:checked`);
+            if (!selected) {
+                showToast('보기를 선택하세요', '답을 고른 뒤 정답을 확인해 주세요.');
+                return;
+            }
+            const statusKey = vocabulary ? 'vocabularyStatus' : 'grammarStatus';
+            tacticalEnglishLesson[statusKey] = Number(selected.value) === question.answerIndex ? 'correct' : 'wrong';
+            renderTacticalEnglishLesson();
+        }
+
+        async function loadTacticalEnglishLesson() {
+            const status = document.getElementById('tactical-english-status');
+            const button = document.getElementById('tactical-english-reload-btn');
+            button.disabled = true;
+            button.classList.add('opacity-50');
+            status.textContent = 'Riot 공식 패치노트를 찾고, 중3 수준의 영어 지문과 문제를 만드는 중입니다.';
+            try {
+                const sourceResponse = await fetch('/api/valorant-news');
+                const source = await sourceResponse.json().catch(() => ({}));
+                if (!sourceResponse.ok) throw new Error(source.error || '공식 패치노트 요청 실패');
+
+                const responseSchema = {
+                    type: 'OBJECT',
+                    properties: {
+                        passage: { type: 'STRING' },
+                        vocabularySentence: { type: 'STRING' },
+                        vocabularyOptions: { type: 'ARRAY', items: { type: 'STRING' } },
+                        vocabularyAnswerIndex: { type: 'INTEGER' },
+                        vocabularyHint: { type: 'STRING' },
+                        vocabularyExplanation: { type: 'STRING' },
+                        grammarFocus: { type: 'STRING' },
+                        grammarPrompt: { type: 'STRING' },
+                        grammarOptions: { type: 'ARRAY', items: { type: 'STRING' } },
+                        grammarAnswerIndex: { type: 'INTEGER' },
+                        grammarHint: { type: 'STRING' },
+                        grammarExplanation: { type: 'STRING' }
+                    },
+                    required: ['passage', 'vocabularySentence', 'vocabularyOptions', 'vocabularyAnswerIndex', 'vocabularyHint', 'vocabularyExplanation', 'grammarFocus', 'grammarPrompt', 'grammarOptions', 'grammarAnswerIndex', 'grammarHint', 'grammarExplanation']
+                };
+                const generated = JSON.parse(await callGeminiAPI({
+                    feature: '영어 전술 분석실',
+                    systemPrompt: 'Create an original English reading lesson for a Korean 9th-grade student, using only the supplied official VALORANT patch-note facts. Do not copy sentences from the source. The reading passage must contain exactly three short, natural English sentences. Create one vocabulary fill-in-the-blank question from a word used in the passage, with exactly four options and a 0-based answer index. Create one grammar question focused on either a middle-school relative pronoun or passive voice, with exactly four options and a 0-based answer index. Include a short hint and Korean explanation for each question. Never invent a balance change or agent ability that is not supported by the source.',
+                    userPrompt: `Official article title: ${source.title}\nOfficial article URL: ${source.sourceUrl}\nArticle text:\n${source.sourceText}`,
+                    responseSchema
+                }));
+
+                if (typeof generated.passage !== 'string' || !generated.passage.trim() || typeof generated.vocabularySentence !== 'string' || !Array.isArray(generated.vocabularyOptions) || generated.vocabularyOptions.length !== 4 || !Array.isArray(generated.grammarOptions) || generated.grammarOptions.length !== 4 || !Number.isInteger(generated.vocabularyAnswerIndex) || generated.vocabularyAnswerIndex < 0 || generated.vocabularyAnswerIndex > 3 || !Number.isInteger(generated.grammarAnswerIndex) || generated.grammarAnswerIndex < 0 || generated.grammarAnswerIndex > 3) {
+                    throw new Error('문제 형식이 올바르지 않습니다.');
+                }
+                const sentenceCount = generated.passage.split(/[.!?]+/).filter(sentence => sentence.trim()).length;
+                if (sentenceCount !== 3) throw new Error('지문이 정확히 세 문장으로 만들어지지 않았습니다.');
+
+                tacticalEnglishLesson = {
+                    source,
+                    passage: generated.passage,
+                    vocabulary: { sentence: generated.vocabularySentence, options: generated.vocabularyOptions, answerIndex: generated.vocabularyAnswerIndex, hint: generated.vocabularyHint, explanation: generated.vocabularyExplanation },
+                    grammar: { focus: generated.grammarFocus, prompt: generated.grammarPrompt, options: generated.grammarOptions, answerIndex: generated.grammarAnswerIndex, hint: generated.grammarHint, explanation: generated.grammarExplanation },
+                    vocabularyStatus: 'pending',
+                    grammarStatus: 'pending'
+                };
+                tacticalEnglishStage = 'reading';
+                const date = source.publishedAt ? ` · ${new Date(source.publishedAt).toLocaleDateString('ko-KR')}` : '';
+                status.textContent = `공식 원문 기반 지문 준비 완료${date}`;
+                renderTacticalEnglishLesson();
+            } catch (error) {
+                console.error('[ENGLISH TACTICAL] Lesson generation failed:', error);
+                status.textContent = '최신 공식 지문을 준비하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.';
+                if (!tacticalEnglishLesson) renderTacticalEnglishLesson();
+            } finally {
+                button.disabled = false;
+                button.classList.remove('opacity-50');
             }
         }
 
@@ -2099,11 +2364,15 @@
             AppState.streak = 3;
             AppState.vp = 450;
             AppState.completedSessions = 0;
+            AppState.clutchRR = 0;
+            unresolvedTacticalTasks = [];
+            localStorage.removeItem(CLUTCH_TASKS_KEY);
             AppState.unlockedSkins = ['default'];
             AppState.equippedSkin = 'default';
             AppState.unlockedIcons = ['duelist'];
             AppState.equippedIcon = 'duelist';
             saveProgressToStorage();
+            updateClutchDashboard();
             renderArmoryItems();
             showToast('데이터 초기화 완료', '초기 상태로 리셋되었습니다.');
         }
@@ -2114,10 +2383,12 @@
         const apiKey = ""; // Canvas 런타임 자동 주입 또는 Vercel 서버리스 모드에서 환경변수 사용
 
         const AI_REQUEST_LOG_KEY = 'valo_ai_request_log_v1';
+        const CLUTCH_TASKS_KEY = 'valo_unresolved_tactical_tasks_v1';
         const DAILY_VP_STORAGE_KEY = 'valo_daily_vp_earned_v1';
         const DAILY_VP_LIMIT = 30;
         let aiRequestLog = [];
         let activeProblemRequest = null;
+        let unresolvedTacticalTasks = [];
 
         function getDailyVPEarnedState() {
             let state;
@@ -2510,6 +2781,132 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
             }).join('');
         }
 
+        function loadClutchTasks() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(CLUTCH_TASKS_KEY) || '[]');
+                unresolvedTacticalTasks = Array.isArray(stored) ? stored.filter(task => task && task.question && Array.isArray(task.options)) : [];
+            } catch (error) {
+                unresolvedTacticalTasks = [];
+            }
+            updateClutchDashboard();
+        }
+
+        function saveClutchTasks() {
+            localStorage.setItem(CLUTCH_TASKS_KEY, JSON.stringify(unresolvedTacticalTasks));
+            updateClutchDashboard();
+        }
+
+        function updateClutchDashboard() {
+            const count = document.getElementById('clutch-task-count');
+            const button = document.getElementById('clutch-start-btn');
+            if (count) count.textContent = `미해결 과제 ${unresolvedTacticalTasks.length}개 · 클러치 RR ${AppState.clutchRR}`;
+            if (button) button.disabled = unresolvedTacticalTasks.length === 0;
+            const rr = document.getElementById('clutch-rr-display');
+            if (rr) rr.textContent = `${AppState.clutchRR} RR`;
+        }
+
+        function rememberMissedProblem(problem) {
+            const topic = document.getElementById('study-topic-input')?.value?.trim() || AppState.selectedSubjectDesc;
+            const key = `${AppState.selectedSubject}::${problem.question}`;
+            const existing = unresolvedTacticalTasks.find(task => task.key === key);
+            if (existing) {
+                existing.wrongAttempts = (existing.wrongAttempts || 1) + 1;
+                existing.lastWrongAt = new Date().toISOString();
+            } else {
+                unresolvedTacticalTasks.push({
+                    key,
+                    subject: AppState.selectedSubject,
+                    topic,
+                    question: problem.question,
+                    options: [...(problem.options || [])],
+                    answerIndex: problem.answerIndex,
+                    hint: problem.hint || '문제의 조건과 핵심 개념을 다시 확인해 보세요.',
+                    explanation: problem.explanation || '',
+                    wrongAttempts: 1,
+                    firstWrongAt: new Date().toISOString(),
+                    lastWrongAt: new Date().toISOString()
+                });
+            }
+            saveClutchTasks();
+        }
+
+        function startClutchMode() {
+            if (unresolvedTacticalTasks.length === 0) {
+                showToast('미해결 과제가 없습니다', '학습 문제를 풀고 오답을 남기면 여기서 다시 도전할 수 있습니다.');
+                return;
+            }
+            document.getElementById('lobby-view').classList.add('hidden');
+            document.getElementById('curiosity-view').classList.add('hidden');
+            document.getElementById('tactical-english-view').classList.add('hidden');
+            document.getElementById('mission-stage-view').classList.add('hidden');
+            document.getElementById('clutch-view').classList.remove('hidden');
+            renderClutchQuestion();
+        }
+
+        function closeClutchMode() {
+            document.getElementById('clutch-view').classList.add('hidden');
+            document.getElementById('lobby-view').classList.remove('hidden');
+            updateClutchDashboard();
+        }
+
+        function renderClutchQuestion() {
+            const card = document.getElementById('clutch-question-card');
+            const task = unresolvedTacticalTasks[0];
+            updateClutchDashboard();
+            if (!task) {
+                card.classList.add('hidden');
+                document.getElementById('clutch-progress').textContent = '모든 오답 과제를 해결했습니다. 훌륭한 클러치 플레이입니다!';
+                return;
+            }
+
+            card.classList.remove('hidden');
+            document.getElementById('clutch-progress').textContent = `${unresolvedTacticalTasks.length}개 남음 · ${task.subject} / ${task.topic}`;
+            document.getElementById('clutch-question-text').textContent = task.question;
+            const options = document.getElementById('clutch-options');
+            options.replaceChildren();
+            task.options.forEach((option, index) => {
+                const label = document.createElement('label');
+                label.className = 'flex items-start gap-2 rounded border border-white/10 bg-valo-panel/70 p-3 text-sm text-valo-offwhite cursor-pointer hover:border-valo-cyan/50';
+                const radio = document.createElement('input');
+                radio.type = 'radio'; radio.name = 'clutch-answer'; radio.value = String(index);
+                radio.className = 'mt-0.5 accent-valo-red shrink-0';
+                const text = document.createElement('span'); text.textContent = option;
+                label.append(radio, text); options.appendChild(label);
+            });
+            const feedback = document.getElementById('clutch-feedback');
+            feedback.textContent = '';
+            feedback.className = 'hidden rounded p-3 text-sm';
+            document.getElementById('clutch-check-btn').textContent = '정답 확인';
+        }
+
+        function checkClutchAnswer() {
+            const task = unresolvedTacticalTasks[0];
+            if (!task) return;
+            const selected = document.querySelector('input[name="clutch-answer"]:checked');
+            if (!selected) {
+                showToast('보기를 선택하세요', '정답을 고른 뒤 클러치 판정을 진행해 주세요.');
+                return;
+            }
+
+            const feedback = document.getElementById('clutch-feedback');
+            if (Number(selected.value) === task.answerIndex) {
+                unresolvedTacticalTasks.shift();
+                AppState.clutchRR += 10;
+                saveClutchTasks();
+                saveProgressToStorage();
+                playTacticalSound('UNLOCK');
+                showToast('CLUTCH ACE! +10 RR', '오답 과제를 해결했습니다. 다음 전술 과제로 이동합니다.');
+                renderClutchQuestion();
+            } else {
+                task.wrongAttempts = (task.wrongAttempts || 1) + 1;
+                task.lastWrongAt = new Date().toISOString();
+                saveClutchTasks();
+                feedback.textContent = `다시 도전해 보세요. 힌트: ${task.hint}`;
+                feedback.className = 'rounded border border-valo-gold/40 bg-valo-gold/10 p-3 text-sm text-valo-gold';
+                playTacticalSound('CLICK');
+            }
+        }
+
         // 정답 판정 로직 (틀리면 정답을 바로 알려주지 않고 소크라테스 힌트 제공!)
         function checkProblemAnswer(probIdx) {
             const prob = AppState.currentProblems[probIdx];
@@ -2546,6 +2943,7 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                     <p class="text-valo-offwhite/90">${prob.explanation}</p>
                 `;
             } else {
+                rememberMissedProblem(prob);
                 playTacticalSound('CLICK');
                 statusSpan.textContent = '⚠️ 함정 감지됨 — 재시도 요망';
                 statusSpan.className = 'font-mono text-xs text-valo-gold font-bold';
