@@ -875,11 +875,14 @@
                         <button onclick="closeTacticalEnglishLab()" class="px-3 py-2 border border-white/20 rounded text-sm text-valo-offwhite whitespace-nowrap">로비로</button>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2">
-                    <select id="tactical-english-news-select" aria-label="학습할 공식 뉴스 선택" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-cyan">
-                        <option value="">최근 한 달 뉴스 목록을 불러오는 중...</option>
-                    </select>
-                    <button onclick="loadTacticalEnglishLesson('selected')" class="px-3 py-2 border border-valo-gold/40 rounded text-sm text-valo-gold whitespace-nowrap">선택 뉴스 학습</button>
+                <div class="space-y-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2">
+                        <select id="tactical-english-news-select" aria-label="학습할 공식 뉴스 선택" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-cyan">
+                            <option value="">최근 한 달 뉴스 목록을 불러오는 중...</option>
+                        </select>
+                        <button onclick="loadTacticalEnglishLesson('selected')" class="px-3 py-2 border border-valo-gold/40 rounded text-sm text-valo-gold whitespace-nowrap">선택 뉴스 학습</button>
+                    </div>
+                    <p id="tactical-english-news-count" class="text-xs text-valo-gray" aria-live="polite">최근 30일 뉴스 목록을 불러오는 중...</p>
                 </div>
                 <div id="tactical-english-lesson" class="space-y-4"></div>
                 <section class="rounded border border-valo-gold/30 bg-valo-dark/50 p-4 sm:p-5 space-y-4">
@@ -1947,11 +1950,14 @@
             button.disabled = true;
             button.classList.add('opacity-50');
             status.textContent = '최근 한 달의 공식 뉴스에서 지문을 골라 중3 수준의 문제를 만드는 중입니다.';
+            let loadingStage = 'news';
             try {
                 const listResponse = await fetch('/api/valorant-news');
                 const listData = await listResponse.json().catch(() => ({}));
                 if (!listResponse.ok) throw new Error(listData.error || '공식 뉴스 목록 요청 실패');
                 const news = Array.isArray(listData.news) ? listData.news : [];
+                const countLabel = document.getElementById('tactical-english-news-count');
+                if (countLabel) countLabel.textContent = '최근 30일 뉴스 ' + news.length + '건';
                 if (!news.length) throw new Error('최근 한 달 안에 게시된 공식 뉴스가 없습니다.');
                 const newsSelect = document.getElementById('tactical-english-news-select');
                 const previousSelection = newsSelect.value;
@@ -1974,6 +1980,7 @@
                 const chosen = selectedNews || randomPool[Math.floor(Math.random() * randomPool.length)];
                 if (!chosen) throw new Error('학습할 뉴스를 선택하지 못했습니다.');
                 newsSelect.value = chosen.sourceUrl;
+                loadingStage = 'article';
                 status.textContent = `공식 뉴스 원문을 불러오는 중: ${chosen.title}`;
                 const articleResponse = await fetch(`/api/valorant-news?url=${encodeURIComponent(chosen.sourceUrl)}`);
                 const source = await articleResponse.json().catch(() => ({}));
@@ -1997,6 +2004,7 @@
                     },
                     required: ['passage', 'vocabularySentence', 'vocabularyOptions', 'vocabularyAnswerIndex', 'vocabularyHint', 'vocabularyExplanation', 'grammarFocus', 'grammarPrompt', 'grammarOptions', 'grammarAnswerIndex', 'grammarHint', 'grammarExplanation']
                 };
+                loadingStage = 'gemini';
                 const generated = JSON.parse(await callGeminiAPI({
                     feature: '영어 전술 분석실',
                     systemPrompt: 'Create an original English reading lesson for a Korean 9th-grade student, using only the supplied facts from the official VALORANT news article. Do not copy sentences from the source. The reading passage must contain exactly three short, natural English sentences. Create one vocabulary fill-in-the-blank question from a word used in the passage, with exactly four options and a 0-based answer index. Create one grammar question focused on either a middle-school relative pronoun or passive voice, with exactly four options and a 0-based answer index. Include a short hint and Korean explanation for each question. Never invent VALORANT facts that are not supported by the source.',
@@ -2029,7 +2037,11 @@
                 renderTacticalEnglishLesson();
             } catch (error) {
                 console.error('[ENGLISH TACTICAL] Lesson generation failed:', error);
-                status.textContent = '최근 공식 뉴스를 준비하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.';
+                status.textContent = loadingStage === 'news'
+                    ? '최근 뉴스 목록을 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요.'
+                    : loadingStage === 'article'
+                        ? '뉴스 목록은 표시했지만 선택한 원문을 불러오지 못했습니다.'
+                        : '뉴스 원문은 준비됐지만 영어 학습 문제 생성에 실패했습니다.';
                 if (!tacticalEnglishLesson) renderTacticalEnglishLesson();
             } finally {
                 button.disabled = false;
