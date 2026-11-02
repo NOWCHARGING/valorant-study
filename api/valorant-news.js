@@ -7,12 +7,10 @@ const OFFICIAL_NEWS_LIST_URLS = [
   'https://playvalorant.com/en-us/news/esports/',
   'https://playvalorant.com/en-us/news/dev/',
   'https://playvalorant.com/en-us/news/merch/',
-  'https://valorantesports.com/en-US/valorantesports/news/',
   'https://valorantesports.com/en-US/news'
 ];
 const OFFICIAL_HOST = 'playvalorant.com';
 const OFFICIAL_ESPORTS_HOST = 'valorantesports.com';
-const NEWS_WINDOW_DAYS = 30;
 
 async function fetchWithTimeout(url, timeoutMs = 12000) {
   const controller = new AbortController();
@@ -93,9 +91,6 @@ function extractRecentNews(html) {
     const after = html.slice(index + match[0].length, Math.min(html.length, index + match[0].length + 1200));
     const context = before.slice(-600) + match[0] + after.slice(0, 800);
     const publishedAt = parseDateFromMarkup(match[2]) || parseDateFromMarkup(context);
-    if (!publishedAt) continue;
-    const age = Date.now() - publishedAt.getTime();
-    if (age < -86400000 || age > NEWS_WINDOW_DAYS * 86400000) continue;
 
     const heading = match[2].match(/<h[1-4]\b[^>]*>([\s\S]*?)<\/h[1-4]>/i)?.[1];
     const titleText = (heading ? stripMarkup(heading) : anchorText)
@@ -108,7 +103,7 @@ function extractRecentNews(html) {
       id: url.href,
       title,
       sourceUrl: url.href,
-      publishedAt: publishedAt.toISOString(),
+      publishedAt: publishedAt ? publishedAt.toISOString() : null,
       summary: stripMarkup(context.replace(match[0], ' ')).slice(0, 240)
     });
   }
@@ -156,11 +151,11 @@ export default async function handler(req, res) {
       }
     }
     const news = [...mergedNews.values()]
-      .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-      .slice(0, 50);
-    if (!news.length) throw new Error('No VALORANT news from the last 30 days was found.');
+      .sort((a, b) => (Date.parse(b.publishedAt) || 0) - (Date.parse(a.publishedAt) || 0))
+      .slice(0, 20);
+    if (!news.length) throw new Error('No official VALORANT news articles were found.');
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-    return res.status(200).json({ news, windowDays: NEWS_WINDOW_DAYS });
+    return res.status(200).json({ news, count: news.length });
   } catch (error) {
     console.error('[VALORANT NEWS] Unable to load official news:', error.message);
     return res.status(502).json({ error: '최근 공식 영문 뉴스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.' });
