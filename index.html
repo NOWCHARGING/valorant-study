@@ -867,7 +867,7 @@
                     <div>
                         <span class="font-mono text-xs text-valo-cyan font-bold tracking-widest">ENGLISH // TACTICAL ANALYSIS</span>
                         <h2 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite mt-1">영어 전술 분석실</h2>
-                        <p id="tactical-english-status" class="text-sm text-valo-gray mt-1">최근 한 달간의 Riot 공식 뉴스를 불러옵니다.</p>
+                        <p id="tactical-english-status" class="text-sm text-valo-gray mt-1">Riot 공식 뉴스 최신 20건에서 오늘의 지문을 불러옵니다.</p>
                         <p class="text-xs text-valo-gold mt-1">지문·단어·문법을 첫 시도에 모두 맞히면 하루 1회 +100 VP 보너스 (일일 기본 한도와 별도)</p>
                     </div>
                     <div class="flex gap-2 shrink-0">
@@ -878,11 +878,11 @@
                 <div class="space-y-1">
                     <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2">
                         <select id="tactical-english-news-select" aria-label="학습할 공식 뉴스 선택" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-cyan">
-                            <option value="">최근 한 달 뉴스 목록을 불러오는 중...</option>
+                            <option value="">뉴스 최신 20건을 불러오는 중...</option>
                         </select>
                         <button onclick="loadTacticalEnglishLesson('selected')" class="px-3 py-2 border border-valo-gold/40 rounded text-sm text-valo-gold whitespace-nowrap">선택 뉴스 학습</button>
                     </div>
-                    <p id="tactical-english-news-count" class="text-xs text-valo-gray" aria-live="polite">최근 30일 뉴스 목록을 불러오는 중...</p>
+                    <p id="tactical-english-news-count" class="text-xs text-valo-gray" aria-live="polite">뉴스 목록을 불러오는 중...</p>
                 </div>
                 <div id="tactical-english-lesson" class="space-y-4"></div>
                 <section class="rounded border border-valo-gold/30 bg-valo-dark/50 p-4 sm:p-5 space-y-4">
@@ -1949,7 +1949,7 @@
             const button = document.getElementById('tactical-english-reload-btn');
             button.disabled = true;
             button.classList.add('opacity-50');
-            status.textContent = '최근 한 달의 공식 뉴스에서 지문을 골라 중3 수준의 문제를 만드는 중입니다.';
+            status.textContent = '공식 뉴스 최신 목록에서 지문을 골라 중3 수준의 문제를 만드는 중입니다.';
             let loadingStage = 'news';
             try {
                 const listResponse = await fetch('/api/valorant-news');
@@ -1957,8 +1957,8 @@
                 if (!listResponse.ok) throw new Error(listData.error || '공식 뉴스 목록 요청 실패');
                 const news = Array.isArray(listData.news) ? listData.news : [];
                 const countLabel = document.getElementById('tactical-english-news-count');
-                if (countLabel) countLabel.textContent = '최근 30일 뉴스 ' + news.length + '건';
-                if (!news.length) throw new Error('최근 한 달 안에 게시된 공식 뉴스가 없습니다.');
+                if (countLabel) countLabel.textContent = '뉴스 목록 ' + news.length + '건';
+                if (!news.length) throw new Error('공식 뉴스 목록을 찾지 못했습니다.');
                 const newsSelect = document.getElementById('tactical-english-news-select');
                 const previousSelection = newsSelect.value;
                 newsSelect.replaceChildren();
@@ -2038,7 +2038,7 @@
             } catch (error) {
                 console.error('[ENGLISH TACTICAL] Lesson generation failed:', error);
                 status.textContent = loadingStage === 'news'
-                    ? '최근 뉴스 목록을 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요.'
+                    ? '공식 뉴스 목록을 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요.'
                     : loadingStage === 'article'
                         ? '뉴스 목록은 표시했지만 선택한 원문을 불러오지 못했습니다.'
                         : '뉴스 원문은 준비됐지만 영어 학습 문제 생성에 실패했습니다.';
