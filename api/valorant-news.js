@@ -58,9 +58,14 @@ function extractArticleText(html) {
 
 function parseDateFromMarkup(markup) {
   const dateValue = markup.match(/<(?:time|[^>]+)\b[^>]*\bdatetime=["']([^"']+)["']/i)?.[1]
-    || markup.match(/\b20\d{2}-\d{2}-\d{2}(?:T[\d:.+-]+Z?)?/i)?.[0];
+    || markup.match(/\b20\d{2}-\d{2}-\d{2}(?:T[\d:.+-]+Z?)?/i)?.[0]
+    || markup.match(/\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},?\s+20\d{2}\b/i)?.[0]
+    || markup.match(/\b\d{1,2}\/\d{1,2}\/20\d{2}\b/)?.[0];
   if (!dateValue) return null;
-  const date = new Date(decodeHtml(dateValue));
+  const numericDate = dateValue.match(/^(\d{1,2})\/(\d{1,2})\/(20\d{2})$/);
+  const date = numericDate
+    ? new Date(Date.UTC(Number(numericDate[3]), Number(numericDate[1]) - 1, Number(numericDate[2]), 12))
+    : new Date(decodeHtml(dateValue));
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -70,17 +75,17 @@ function isSupportedArticle(url) {
     return /^\/en-us\/news\/(?!tags\/)[^/]+\/[^/]+\/?$/i.test(url.pathname);
   }
   if (url.hostname === OFFICIAL_ESPORTS_HOST) {
-    return /^\/en-[a-z]{2}\/valorantesports\/news\/[^/]+\/?$/i.test(url.pathname);
+    return /^\/en-[a-z]{2}\/(?:valorantesports\/)?news\/[^/]+\/?$/i.test(url.pathname);
   }
   return false;
 }
 
-function extractRecentNews(html) {
+function extractRecentNews(html, baseUrl = OFFICIAL_NEWS_URL) {
   const anchors = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
   const unique = new Map();
   for (const match of anchors) {
     let url;
-    try { url = new URL(decodeHtml(match[1]), OFFICIAL_NEWS_URL); } catch { continue; }
+    try { url = new URL(decodeHtml(match[1]), baseUrl); } catch { continue; }
     if (!isSupportedArticle(url)) continue;
 
     // The Riot newsroom links to written VCT coverage on its official esports site.
@@ -95,6 +100,8 @@ function extractRecentNews(html) {
     const heading = match[2].match(/<h[1-4]\b[^>]*>([\s\S]*?)<\/h[1-4]>/i)?.[1];
     const titleText = (heading ? stripMarkup(heading) : anchorText)
       .replace(/\b20\d{2}-\d{2}-\d{2}T[\d:.+-]+Z?\b/gi, ' ')
+      .replace(/\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},?\s+20\d{2}\b/gi, ' ')
+      .replace(/\b\d{1,2}\/\d{1,2}\/20\d{2}\b/g, ' ')
       .replace(/^\s*(?:community|announcements?|game updates|esports|merch|dev)\s+/i, '')
       .replace(/\s+/g, ' ').trim();
     const title = (heading ? titleText : titleText.split(/(?<=[.!?])\s+/)[0]).slice(0, 180);
@@ -140,12 +147,12 @@ export default async function handler(req, res) {
     const pageResults = await Promise.allSettled(OFFICIAL_NEWS_LIST_URLS.map(async url => {
       const response = await fetchWithTimeout(url, 7000);
       if (!response.ok) throw new Error(`Riot news list returned HTTP ${response.status}`);
-      return response.text();
+      return { url, html: await response.text() };
     }));
     const mergedNews = new Map();
     for (const result of pageResults) {
       if (result.status !== 'fulfilled') continue;
-      for (const item of extractRecentNews(result.value)) {
+      for (const item of extractRecentNews(result.value.html, result.value.url)) {
         const existing = mergedNews.get(item.sourceUrl);
         if (!existing || item.title.length > existing.title.length) mergedNews.set(item.sourceUrl, item);
       }
