@@ -6,9 +6,11 @@ const OFFICIAL_NEWS_LIST_URLS = [
   'https://playvalorant.com/en-us/news/game-updates/',
   'https://playvalorant.com/en-us/news/esports/',
   'https://playvalorant.com/en-us/news/dev/',
-  'https://playvalorant.com/en-us/news/merch/'
+  'https://playvalorant.com/en-us/news/merch/',
+  'https://valorantesports.com/en-US/news'
 ];
 const OFFICIAL_HOST = 'playvalorant.com';
+const OFFICIAL_ESPORTS_HOST = 'valorantesports.com';
 const NEWS_WINDOW_DAYS = 30;
 
 async function fetchWithTimeout(url, timeoutMs = 12000) {
@@ -63,38 +65,53 @@ function parseDateFromMarkup(markup) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function isSupportedArticle(url) {
+  if (url.protocol !== 'https:') return false;
+  if (url.hostname === OFFICIAL_HOST) {
+    return /^\/en-us\/news\/(?!tags\/)[^/]+\/[^/]+\/?$/i.test(url.pathname);
+  }
+  if (url.hostname === OFFICIAL_ESPORTS_HOST) {
+    return /^\/en-[a-z]{2}\/valorantesports\/news\/[^/]+\/?$/i.test(url.pathname);
+  }
+  return false;
+}
+
 function extractRecentNews(html) {
-  const anchors = [...html.matchAll(/<a\b[^>]*href=["']([^"']*\/en-us\/news\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+  const anchors = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
   const unique = new Map();
   for (const match of anchors) {
     let url;
     try { url = new URL(decodeHtml(match[1]), OFFICIAL_NEWS_URL); } catch { continue; }
-    if (url.hostname !== OFFICIAL_HOST || !/^\/en-us\/news\/(?!tags\/)[^/]+\/[^/]+\/?$/i.test(url.pathname)) continue;
+    if (!isSupportedArticle(url)) continue;
 
-    // Riot includes each card's publication timestamp inside the linked card text.
-    // Prefer that timestamp so neighboring cards cannot overwrite one another.
+    // The Riot newsroom links to written VCT coverage on its official esports site.
+    // Read each card's date first so adjacent cards do not lend each other a date.
     const anchorText = stripMarkup(match[2]);
     const index = match.index || 0;
-    const before = html.slice(Math.max(0, index - 1600), index);
-    const after = html.slice(index + match[0].length, Math.min(html.length, index + match[0].length + 1600));
-    const cardStart = Math.max(before.lastIndexOf('<article'), before.lastIndexOf('<li'));
-    const context = cardStart >= 0 ? before.slice(cardStart) + match[0] + after : before.slice(-500) + match[0] + after.slice(0, 700);
+    const before = html.slice(Math.max(0, index - 1200), index);
+    const after = html.slice(index + match[0].length, Math.min(html.length, index + match[0].length + 1200));
+    const context = before.slice(-600) + match[0] + after.slice(0, 800);
     const publishedAt = parseDateFromMarkup(match[2]) || parseDateFromMarkup(context);
     if (!publishedAt) continue;
     const age = Date.now() - publishedAt.getTime();
     if (age < -86400000 || age > NEWS_WINDOW_DAYS * 86400000) continue;
 
     const heading = match[2].match(/<h[1-4]\b[^>]*>([\s\S]*?)<\/h[1-4]>/i)?.[1];
-    const cleanedText = (heading ? stripMarkup(heading) : anchorText)
+    const titleText = (heading ? stripMarkup(heading) : anchorText)
       .replace(/\b20\d{2}-\d{2}-\d{2}T[\d:.+-]+Z?\b/gi, ' ')
       .replace(/^\s*(?:community|announcements?|game updates|esports|merch|dev)\s+/i, '')
       .replace(/\s+/g, ' ').trim();
-    const title = (heading ? cleanedText : cleanedText.split(/(?<=[.!?])\s+/)[0]).slice(0, 180);
+    const title = (heading ? titleText : titleText.split(/(?<=[.!?])\s+/)[0]).slice(0, 180);
     if (!title || unique.has(url.href)) continue;
-    const summary = stripMarkup(context.replace(match[0], ' ')).slice(0, 240);
-    unique.set(url.href, { id: url.pathname, title, sourceUrl: url.href, publishedAt: publishedAt.toISOString(), summary });
+    unique.set(url.href, {
+      id: url.href,
+      title,
+      sourceUrl: url.href,
+      publishedAt: publishedAt.toISOString(),
+      summary: stripMarkup(context.replace(match[0], ' ')).slice(0, 240)
+    });
   }
-  return [...unique.values()].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)).slice(0, 50);
+  return [...unique.values()];
 }
 
 export default async function handler(req, res) {
@@ -108,7 +125,7 @@ export default async function handler(req, res) {
     if (requestedUrl) {
       let articleUrl;
       try { articleUrl = new URL(requestedUrl); } catch { return res.status(400).json({ error: '올바르지 않은 뉴스 주소입니다.' }); }
-      if (articleUrl.hostname !== OFFICIAL_HOST || articleUrl.protocol !== 'https:' || !/^\/en-us\/news\/(?!tags\/)[^/]+\/[^/]+\/?$/i.test(articleUrl.pathname)) {
+      if (!isSupportedArticle(articleUrl)) {
         return res.status(400).json({ error: '공식 VALORANT 뉴스 주소만 사용할 수 있습니다.' });
       }
       const articleResponse = await fetchWithTimeout(articleUrl.href);
@@ -123,10 +140,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ title, sourceUrl: articleUrl.href, publishedAt, sourceText });
     }
 
-    // The landing page server markup may contain only a small first batch.
-    // Merge Riot's official category archives to include more current articles.
+    // Merge the official newsroom archives with written VALORANT Esports coverage.
     const pageResults = await Promise.allSettled(OFFICIAL_NEWS_LIST_URLS.map(async url => {
-      const response = await fetchWithTimeout(url);
+      const response = await fetchWithTimeout(url, 7000);
       if (!response.ok) throw new Error(`Riot news list returned HTTP ${response.status}`);
       return response.text();
     }));
@@ -142,7 +158,7 @@ export default async function handler(req, res) {
       .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
       .slice(0, 50);
     if (!news.length) throw new Error('No VALORANT news from the last 30 days was found.');
-    res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=1800');
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
     return res.status(200).json({ news, windowDays: NEWS_WINDOW_DAYS });
   } catch (error) {
     console.error('[VALORANT NEWS] Unable to load official news:', error.message);
