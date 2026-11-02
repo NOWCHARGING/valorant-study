@@ -45,15 +45,40 @@ function readMeta(html, key) {
   return tag?.match(/content=["']([^"']*)["']/i)?.[1] || '';
 }
 
+function extractJsonLdArticleBody(html) {
+  const scripts = [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const bodies = [];
+  const visit = value => {
+    if (!value || typeof value !== 'object') return;
+    if (typeof value.articleBody === 'string') bodies.push(value.articleBody);
+    if (Array.isArray(value)) value.forEach(visit);
+    else Object.values(value).forEach(visit);
+  };
+  for (const script of scripts) {
+    try { visit(JSON.parse(script[1])); } catch { /* Ignore unrelated or malformed JSON-LD blocks. */ }
+  }
+  return bodies.map(stripMarkup).filter(text => text.length >= 120).sort((a, b) => b.length - a.length)[0] || '';
+}
+
 function extractArticleText(html) {
-  const articleMarkup = html.match(/<article\b[\s\S]*?<\/article>/i)?.[0]
-    || html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
-  const content = articleMarkup
-    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ').replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<nav\b[\s\S]*?<\/nav>/gi, ' ').replace(/<footer\b[\s\S]*?<\/footer>/gi, ' ');
-  const blocks = [...content.matchAll(/<(h[1-4]|p|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)]
-    .map(match => stripMarkup(match[2])).filter(text => text.length >= 24);
-  return ([...new Set(blocks)].join('\n') || stripMarkup(content)).slice(0, 16000);
+  const candidates = [
+    html.match(/<article\b[\s\S]*?<\/article>/i)?.[0],
+    html.match(/<main\b[\s\S]*?<\/main>/i)?.[0],
+    html
+  ].filter(Boolean);
+  const extracted = candidates.map(markup => {
+    const content = markup
+      .replace(/<script\b[\s\S]*?<\/script>/gi, ' ').replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<nav\b[\s\S]*?<\/nav>/gi, ' ').replace(/<footer\b[\s\S]*?<\/footer>/gi, ' ');
+    const blocks = [...content.matchAll(/<(h[1-4]|p|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)]
+      .map(match => stripMarkup(match[2])).filter(text => text.length >= 24);
+    return [...new Set(blocks)].join('\n');
+  }).sort((a, b) => b.length - a.length)[0] || '';
+  if (extracted.length >= 120) return extracted.slice(0, 16000);
+  const structuredBody = extractJsonLdArticleBody(html);
+  if (structuredBody) return structuredBody.slice(0, 16000);
+  const description = stripMarkup(readMeta(html, 'og:description') || readMeta(html, 'description'));
+  return [extracted, description].filter(Boolean).join('\n').slice(0, 16000);
 }
 
 function parseDateFromMarkup(markup) {
@@ -80,6 +105,19 @@ function isSupportedArticle(url) {
   return false;
 }
 
+function canonicalizeArticleUrl(url) {
+  const aliasMatch = url.hostname === OFFICIAL_ESPORTS_HOST
+    ? url.pathname.match(/^\/(en-[a-z]{2})\/news\/([^/]+)\/?$/i)
+    : null;
+  if (aliasMatch) {
+    const canonical = new URL(url.href);
+    canonical.pathname = `/${aliasMatch[1]}/valorantesports/news/${aliasMatch[2]}`;
+    canonical.search = '';
+    canonical.hash = '';
+    return canonical;
+  }
+  return url;
+}
 function extractRecentNews(html, baseUrl = OFFICIAL_NEWS_URL) {
   const anchors = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
   const unique = new Map();
@@ -123,24 +161,41 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  let isArticleRequest = false;
   try {
     const requestedUrl = req.query?.url;
+    isArticleRequest = Boolean(requestedUrl);
     if (requestedUrl) {
-      let articleUrl;
-      try { articleUrl = new URL(requestedUrl); } catch { return res.status(400).json({ error: '올바르지 않은 뉴스 주소입니다.' }); }
-      if (!isSupportedArticle(articleUrl)) {
+      let requestedArticleUrl;
+      try { requestedArticleUrl = new URL(requestedUrl); } catch { return res.status(400).json({ error: '올바르지 않은 뉴스 주소입니다.' }); }
+      if (!isSupportedArticle(requestedArticleUrl)) {
         return res.status(400).json({ error: '공식 VALORANT 뉴스 주소만 사용할 수 있습니다.' });
       }
+      const articleUrl = canonicalizeArticleUrl(requestedArticleUrl);
       const articleResponse = await fetchWithTimeout(articleUrl.href);
-      if (!articleResponse.ok) throw new Error(`Riot article returned HTTP ${articleResponse.status}`);
+      if (!articleResponse.ok) {
+        console.error('[VALORANT NEWS] Article fetch failed:', articleUrl.hostname, articleResponse.status);
+        return res.status(502).json({
+          error: articleResponse.status === 404
+            ? '공식 원문 주소가 바뀌었거나 삭제되었습니다.'
+            : '공식 뉴스 서버가 원문 요청을 거부했습니다.'
+        });
+      }
+      const finalUrl = new URL(articleResponse.url);
+      if (!isSupportedArticle(finalUrl)) {
+        return res.status(502).json({ error: '공식 원문 주소로 안전하게 연결하지 못했습니다.' });
+      }
       const articleHtml = await articleResponse.text();
       const title = stripMarkup(readMeta(articleHtml, 'og:title'))
         || stripMarkup(articleHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '') || 'VALORANT News';
-      const publishedAt = readMeta(articleHtml, 'article:published_time');
+      const publishedAt = readMeta(articleHtml, 'article:published_time') || parseDateFromMarkup(articleHtml)?.toISOString() || null;
       const sourceText = extractArticleText(articleHtml);
-      if (sourceText.length < 120) throw new Error('Official news article text could not be extracted.');
+      if (sourceText.length < 120) {
+        console.error('[VALORANT NEWS] Article body extraction too short:', finalUrl.hostname, sourceText.length);
+        return res.status(502).json({ error: '원문 페이지는 열렸지만 학습에 사용할 본문을 읽지 못했습니다.' });
+      }
       res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
-      return res.status(200).json({ title, sourceUrl: articleUrl.href, publishedAt, sourceText });
+      return res.status(200).json({ title, sourceUrl: finalUrl.href, publishedAt, sourceText });
     }
 
     // Merge the official newsroom archives with written VALORANT Esports coverage.
@@ -165,6 +220,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ news, count: news.length });
   } catch (error) {
     console.error('[VALORANT NEWS] Unable to load official news:', error.message);
-    return res.status(502).json({ error: '최근 공식 영문 뉴스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.' });
+    return res.status(502).json({ error: isArticleRequest ? '공식 기사 원문 서버에 연결하지 못했습니다.' : '최근 공식 영문 뉴스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.' });
   }
 }
