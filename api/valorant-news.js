@@ -6,7 +6,6 @@ const OFFICIAL_NEWS_LIST_URLS = [
   'https://playvalorant.com/en-us/news/game-updates/',
   'https://playvalorant.com/en-us/news/esports/',
   'https://playvalorant.com/en-us/news/dev/',
-  'https://playvalorant.com/en-us/news/merch/',
   'https://valorantesports.com/en-US/news'
 ];
 const OFFICIAL_HOST = 'playvalorant.com';
