@@ -868,6 +868,7 @@
                         <span class="font-mono text-xs text-valo-cyan font-bold tracking-widest">ENGLISH // TACTICAL ANALYSIS</span>
                         <h2 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite mt-1">영어 전술 분석실</h2>
                         <p id="tactical-english-status" class="text-sm text-valo-gray mt-1">공식 영문 패치노트에서 오늘의 지문을 불러옵니다.</p>
+                        <p class="text-xs text-valo-gold mt-1">지문·단어·문법을 첫 시도에 모두 맞히면 하루 1회 +100 VP 보너스 (일일 기본 한도와 별도)</p>
                     </div>
                     <div class="flex gap-2 shrink-0">
                         <button id="tactical-english-reload-btn" onclick="loadTacticalEnglishLesson()" class="px-3 py-2 border border-valo-cyan/40 rounded text-sm text-valo-cyan whitespace-nowrap">최신 지문</button>
@@ -875,6 +876,31 @@
                     </div>
                 </div>
                 <div id="tactical-english-lesson" class="space-y-4"></div>
+                <section class="rounded border border-valo-gold/30 bg-valo-dark/50 p-4 sm:p-5 space-y-4">
+                    <div>
+                        <h3 class="font-display text-lg font-bold text-valo-gold">전술 단어장 & 반복 훈련</h3>
+                        <p class="text-xs text-valo-gray mt-1">지문에서 단어를 눌러 모르는 단어로 체크하거나, 학교 단어를 뜻·예문과 함께 등록하세요.</p>
+                    </div>
+                    <form class="grid grid-cols-1 md:grid-cols-4 gap-2" onsubmit="addSchoolVocabulary(event)">
+                        <input id="school-vocab-word" required type="text" placeholder="학교 단어 (English)" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-gold">
+                        <input id="school-vocab-meaning" required type="text" placeholder="뜻 (한국어)" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-gold">
+                        <input id="school-vocab-example" required type="text" placeholder="예문에 단어 포함" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-gold">
+                        <button class="rounded bg-valo-gold/20 border border-valo-gold/40 px-3 py-2 text-sm font-bold text-valo-gold">학교 단어 저장</button>
+                    </form>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="english-vocab-save-unknown" onclick="saveUnknownWordsAsVocabulary()" disabled class="rounded border border-valo-cyan/40 bg-valo-cyan/10 px-3 py-2 text-xs font-bold text-valo-cyan disabled:opacity-40">체크한 단어 뜻·예문 만들기 (<span id="english-vocab-selected-count">0</span>)</button>
+                        <span id="english-vocab-status" class="text-xs text-valo-gray" aria-live="polite"></span>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
+                        <p id="english-vocab-count" class="text-xs text-valo-gray">저장 단어 0개 · 연습은 10~15문항</p>
+                        <div class="flex gap-2">
+                            <button id="english-word-practice-daily" onclick="startEnglishWordPractice('daily')" class="rounded bg-valo-cyan/15 border border-valo-cyan/35 px-3 py-2 text-xs font-bold text-valo-cyan disabled:opacity-40" disabled>오늘 10~15 단어</button>
+                            <button id="english-word-practice-weekly" onclick="startEnglishWordPractice('weekly')" class="rounded bg-valo-red/15 border border-valo-red/35 px-3 py-2 text-xs font-bold text-valo-red disabled:opacity-40" disabled>주간 10~15 단어</button>
+                        </div>
+                    </div>
+                    <div id="english-word-practice-panel" class="space-y-3"></div>
+                    <div id="english-vocabulary-bank" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+                </section>
             </div>
         </section>
 
@@ -1587,7 +1613,7 @@
             document.getElementById('hud-streak').textContent = AppState.streak;
             document.getElementById('hud-vp').textContent = AppState.vp.toLocaleString();
             const dailyVP = getDailyVPEarnedState();
-            document.getElementById('hud-vp-daily').textContent = `오늘 +${dailyVP.earned} / ${DAILY_VP_LIMIT}`;
+            document.getElementById('hud-vp-daily').textContent = `오늘 +${dailyVP.earned} / ${DAILY_VP_LIMIT} · 영어 ${isEnglishPerfectBonusClaimedToday() ? '+100' : '+0'}`;
             document.getElementById('hud-sessions').textContent = AppState.completedSessions;
             
             const totalUnlocked = AppState.unlockedSkins.length + AppState.unlockedIcons.length;
@@ -1621,6 +1647,7 @@
             loadProgressFromStorage();
             loadAIRequestLog();
             loadClutchTasks();
+            loadEnglishVocabulary();
             const todayStr = getTodayDateString();
             document.getElementById('modal-today-date').textContent = todayStr.replace(/-/g, '.');
 
@@ -1791,12 +1818,31 @@
                 note.textContent = '공식 패치노트 내용을 바탕으로 새롭게 쓴 3문장 지문입니다.';
                 const passage = document.createElement('p');
                 passage.className = 'whitespace-pre-line leading-relaxed text-base text-valo-offwhite';
-                passage.textContent = tacticalEnglishLesson.passage;
+                tacticalEnglishLesson.unknownWords ||= [];
+                tacticalEnglishLesson.passage.split(/(\b[A-Za-z][A-Za-z'-]*\b)/g).forEach(part => {
+                    if (/^[A-Za-z][A-Za-z'-]*$/.test(part)) {
+                        const word = document.createElement('button');
+                        const marked = tacticalEnglishLesson.unknownWords.includes(normalizeEnglishWord(part));
+                        word.type = 'button';
+                        word.textContent = part;
+                        word.title = marked ? '모르는 단어 체크 해제' : '모르는 단어로 체크';
+                        word.className = marked
+                            ? 'inline rounded px-0.5 bg-valo-gold/25 text-valo-gold underline decoration-dotted'
+                            : 'inline rounded px-0.5 hover:bg-valo-cyan/15 hover:text-valo-cyan';
+                        word.onclick = () => toggleUnknownEnglishWord(part);
+                        passage.appendChild(word);
+                    } else {
+                        passage.appendChild(document.createTextNode(part));
+                    }
+                });
                 const next = document.createElement('button');
                 next.className = 'w-full rounded bg-valo-cyan px-4 py-3 font-bold text-valo-dark';
                 next.textContent = '단어 빈칸 문제 풀기';
                 next.onclick = () => { tacticalEnglishStage = 'vocabulary'; renderTacticalEnglishLesson(); };
-                card.append(note, passage, next);
+                const wordHelp = document.createElement('p');
+                wordHelp.className = 'text-xs text-valo-gray';
+                wordHelp.textContent = '지문 속 모르는 단어를 눌러 체크한 뒤 아래 단어장에 뜻과 예문을 저장할 수 있습니다.';
+                card.append(note, passage, wordHelp, next);
             } else if (tacticalEnglishStage === 'vocabulary' || tacticalEnglishStage === 'grammar') {
                 const vocabulary = tacticalEnglishStage === 'vocabulary';
                 const question = vocabulary ? tacticalEnglishLesson.vocabulary : tacticalEnglishLesson.grammar;
@@ -1845,6 +1891,13 @@
                     action.onclick = () => {
                         tacticalEnglishStage = vocabulary ? 'grammar' : 'complete';
                         renderTacticalEnglishLesson();
+                        if (!vocabulary) {
+                            if (tacticalEnglishLesson.vocabularyFirstTry && tacticalEnglishLesson.grammarFirstTry) {
+                                awardEnglishPerfectBonus();
+                            } else {
+                                showToast('전술 분석 완료', '100 VP 보너스는 단어와 문법을 첫 시도에 모두 맞혔을 때 지급됩니다.');
+                            }
+                        }
                     };
                 } else {
                     action.textContent = '정답 확인';
@@ -1876,6 +1929,9 @@
             }
             const statusKey = vocabulary ? 'vocabularyStatus' : 'grammarStatus';
             tacticalEnglishLesson[statusKey] = Number(selected.value) === question.answerIndex ? 'correct' : 'wrong';
+            if (tacticalEnglishLesson[statusKey] === 'wrong') {
+                tacticalEnglishLesson[vocabulary ? 'vocabularyFirstTry' : 'grammarFirstTry'] = false;
+            }
             renderTacticalEnglishLesson();
         }
 
@@ -1927,7 +1983,10 @@
                     vocabulary: { sentence: generated.vocabularySentence, options: generated.vocabularyOptions, answerIndex: generated.vocabularyAnswerIndex, hint: generated.vocabularyHint, explanation: generated.vocabularyExplanation },
                     grammar: { focus: generated.grammarFocus, prompt: generated.grammarPrompt, options: generated.grammarOptions, answerIndex: generated.grammarAnswerIndex, hint: generated.grammarHint, explanation: generated.grammarExplanation },
                     vocabularyStatus: 'pending',
-                    grammarStatus: 'pending'
+                    grammarStatus: 'pending',
+                    vocabularyFirstTry: true,
+                    grammarFirstTry: true,
+                    unknownWords: []
                 };
                 tacticalEnglishStage = 'reading';
                 const date = source.publishedAt ? ` · ${new Date(source.publishedAt).toLocaleDateString('ko-KR')}` : '';
@@ -1941,6 +2000,289 @@
                 button.disabled = false;
                 button.classList.remove('opacity-50');
             }
+        }
+
+        function normalizeEnglishWord(word) {
+            return String(word || '').trim().toLowerCase().replace(/[^a-z'-]/g, '');
+        }
+
+        function loadEnglishVocabulary() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(ENGLISH_VOCABULARY_KEY) || '[]');
+                englishVocabulary = Array.isArray(stored) ? stored.filter(item => item && item.word && item.meaningKo && item.exampleSentence) : [];
+            } catch (error) {
+                englishVocabulary = [];
+            }
+            renderEnglishVocabularyBank();
+        }
+
+        function saveEnglishVocabulary() {
+            try {
+                localStorage.setItem(ENGLISH_VOCABULARY_KEY, JSON.stringify(englishVocabulary));
+                renderEnglishVocabularyBank();
+                return true;
+            } catch (error) {
+                console.warn('[ENGLISH VOCAB] Local vocabulary could not be saved.', error);
+                showToast('단어 저장 실패', '브라우저 저장 공간을 확인해 주세요.');
+                return false;
+            }
+        }
+
+        function upsertEnglishVocabulary(word, meaningKo, exampleSentence, source, partOfSpeech = '') {
+            const key = normalizeEnglishWord(word);
+            const existing = englishVocabulary.find(item => item.key === key);
+            if (existing) {
+                existing.meaningKo = meaningKo || existing.meaningKo;
+                existing.exampleSentence = exampleSentence || existing.exampleSentence;
+                existing.partOfSpeech = partOfSpeech || existing.partOfSpeech || '';
+                existing.sources ||= [];
+                if (!existing.sources.includes(source)) existing.sources.push(source);
+            } else {
+                englishVocabulary.push({
+                    key,
+                    word: String(word).trim(),
+                    meaningKo,
+                    exampleSentence,
+                    partOfSpeech,
+                    sources: [source],
+                    createdAt: new Date().toISOString(),
+                    lastPracticedAt: null,
+                    practiceCount: 0
+                });
+            }
+        }
+
+        function renderEnglishVocabularyBank() {
+            const list = document.getElementById('english-vocabulary-bank');
+            const count = document.getElementById('english-vocab-count');
+            if (!list || !count) return;
+            count.textContent = `저장 단어 ${englishVocabulary.length}개 · 10개부터 오늘·주간 타이핑 연습 가능`;
+            for (const id of ['english-word-practice-daily', 'english-word-practice-weekly']) {
+                const button = document.getElementById(id);
+                if (button) button.disabled = englishVocabulary.length < 10;
+            }
+            list.replaceChildren();
+            if (englishVocabulary.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'text-xs text-valo-gray';
+                empty.textContent = '전술 지문에서 모르는 단어를 체크하거나 학교 단어를 등록해 단어장을 만들어 보세요.';
+                list.appendChild(empty);
+                return;
+            }
+            [...englishVocabulary].reverse().forEach(item => {
+                const card = document.createElement('article');
+                card.className = 'rounded border border-white/10 bg-valo-panel/60 p-3 space-y-1.5';
+                const title = document.createElement('div');
+                title.className = 'flex flex-wrap items-baseline gap-2';
+                const word = document.createElement('strong');
+                word.className = 'text-sm text-valo-gold'; word.textContent = item.word;
+                const pos = document.createElement('span');
+                pos.className = 'text-[10px] text-valo-gray'; pos.textContent = item.partOfSpeech || '';
+                const meaning = document.createElement('span');
+                meaning.className = 'text-xs text-valo-offwhite'; meaning.textContent = item.meaningKo;
+                title.append(word, pos, meaning);
+                const example = document.createElement('p');
+                example.className = 'text-xs text-valo-cyan/90'; example.textContent = item.exampleSentence;
+                const source = document.createElement('p');
+                source.className = 'text-[10px] text-valo-gray'; source.textContent = `출처: ${(item.sources || []).join(' · ')}`;
+                card.append(title, example, source);
+                list.appendChild(card);
+            });
+        }
+
+        function addSchoolVocabulary(event) {
+            event.preventDefault();
+            const word = document.getElementById('school-vocab-word').value.trim();
+            const meaning = document.getElementById('school-vocab-meaning').value.trim();
+            const example = document.getElementById('school-vocab-example').value.trim();
+            const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            if (!word || /\s/.test(word) || !meaning || !new RegExp(`\\b${escaped}\\b`, 'i').test(example)) {
+                showToast('단어 정보를 확인해 주세요', '한 단어, 한국어 뜻, 해당 단어가 들어간 영어 예문을 입력해 주세요.');
+                return;
+            }
+            upsertEnglishVocabulary(word, meaning, example, '학교 단어');
+            if (!saveEnglishVocabulary()) return;
+            event.target.reset();
+            showToast('학교 단어 저장 완료', `${word}의 뜻과 예문을 단어장에 추가했습니다.`);
+        }
+
+        function toggleUnknownEnglishWord(word) {
+            if (!tacticalEnglishLesson) return;
+            const key = normalizeEnglishWord(word);
+            const selected = tacticalEnglishLesson.unknownWords;
+            const index = selected.indexOf(key);
+            if (index >= 0) selected.splice(index, 1);
+            else selected.push(key);
+            updateUnknownEnglishWordSelection();
+            renderTacticalEnglishLesson();
+        }
+
+        function updateUnknownEnglishWordSelection() {
+            const selected = tacticalEnglishLesson?.unknownWords || [];
+            const count = document.getElementById('english-vocab-selected-count');
+            const button = document.getElementById('english-vocab-save-unknown');
+            if (count) count.textContent = String(selected.length);
+            if (button) button.disabled = selected.length === 0;
+        }
+
+        async function saveUnknownWordsAsVocabulary() {
+            if (!tacticalEnglishLesson?.unknownWords?.length) {
+                showToast('단어를 먼저 체크하세요', '전술 지문에서 모르는 단어를 눌러 선택해 주세요.');
+                return;
+            }
+            const selectedKeys = new Set(tacticalEnglishLesson.unknownWords);
+            const words = [...new Set((tacticalEnglishLesson.passage.match(/\b[A-Za-z][A-Za-z'-]*\b/g) || [])
+                .filter(word => selectedKeys.has(normalizeEnglishWord(word))))];
+            const button = document.getElementById('english-vocab-save-unknown');
+            const status = document.getElementById('english-vocab-status');
+            button.disabled = true;
+            status.textContent = '뜻과 새 예문을 만드는 중입니다...';
+            try {
+                const responseSchema = {
+                    type: 'ARRAY',
+                    items: {
+                        type: 'OBJECT',
+                        properties: {
+                            word: { type: 'STRING' },
+                            meaningKo: { type: 'STRING' },
+                            partOfSpeech: { type: 'STRING' },
+                            exampleSentence: { type: 'STRING' }
+                        },
+                        required: ['word', 'meaningKo', 'partOfSpeech', 'exampleSentence']
+                    }
+                };
+                const entries = JSON.parse(await callGeminiAPI({
+                    feature: '전술 단어장',
+                    systemPrompt: 'For each requested English word, explain its meaning in the supplied VALORANT patch-reading context, give a concise Korean meaning and part of speech, and write one original, natural English example sentence containing the exact word form. Return one entry for every requested word. Do not copy sentences from the article.',
+                    userPrompt: `Context passage:\n${tacticalEnglishLesson.passage}\n\nWords to save:\n${words.join(', ')}`,
+                    responseSchema
+                }));
+                if (!Array.isArray(entries)) throw new Error('단어 설명 형식이 올바르지 않습니다.');
+                const byKey = new Map(entries.map(entry => [normalizeEnglishWord(entry.word), entry]));
+                for (const word of words) {
+                    const entry = byKey.get(normalizeEnglishWord(word));
+                    if (!entry?.meaningKo || !entry?.exampleSentence) throw new Error(`${word}의 뜻이나 예문을 만들지 못했습니다.`);
+                    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    if (!new RegExp(`\\b${escapedWord}\\b`, 'i').test(entry.exampleSentence)) throw new Error(`${word}가 포함된 예문을 만들지 못했습니다.`);
+                    upsertEnglishVocabulary(word, entry.meaningKo, entry.exampleSentence, '전술 분석실', entry.partOfSpeech);
+                }
+                if (!saveEnglishVocabulary()) throw new Error('브라우저 단어장에 저장하지 못했습니다.');
+                tacticalEnglishLesson.unknownWords = [];
+                updateUnknownEnglishWordSelection();
+                renderTacticalEnglishLesson();
+                status.textContent = `${words.length}개 단어의 뜻과 예문을 저장했습니다.`;
+            } catch (error) {
+                console.error('[ENGLISH VOCAB] Word lookup failed:', error);
+                status.textContent = '단어 정보를 가져오지 못했습니다. 다시 시도해 주세요.';
+                button.disabled = false;
+            }
+        }
+
+        function startEnglishWordPractice(period) {
+            const available = englishVocabulary.filter(item => item.word && item.exampleSentence && item.meaningKo);
+            if (available.length < 10) {
+                showToast('단어가 더 필요합니다', `학교 단어와 전술 단어를 합쳐 ${10 - available.length}개 더 저장하면 10문항 연습을 시작할 수 있습니다.`);
+                return;
+            }
+            const now = new Date();
+            const cutoff = period === 'weekly' ? now.getTime() - 7 * 24 * 60 * 60 * 1000 : new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const due = available.filter(item => !item.lastPracticedAt || new Date(item.lastPracticedAt).getTime() < cutoff)
+                .sort((a, b) => (a.lastPracticedAt ? new Date(a.lastPracticedAt).getTime() : 0) - (b.lastPracticedAt ? new Date(b.lastPracticedAt).getTime() : 0));
+            const chosen = [];
+            const chosenKeys = new Set();
+            const addItem = item => {
+                if (item && !chosenKeys.has(item.key) && chosen.length < 15) {
+                    chosen.push(item); chosenKeys.add(item.key);
+                }
+            };
+            for (const source of ['학교 단어', '전술 분석실']) {
+                addItem(due.find(item => (item.sources || []).includes(source)));
+            }
+            [...due, ...available].forEach(addItem);
+            if (chosen.length < 10) {
+                showToast('복습 단어가 부족합니다', '10~15문항 구성을 위해 단어를 더 저장해 주세요.');
+                return;
+            }
+            wordPracticeSession = { period, words: chosen, index: 0, correctCount: 0, status: 'pending' };
+            renderEnglishWordPractice();
+        }
+
+        function renderEnglishWordPractice() {
+            const panel = document.getElementById('english-word-practice-panel');
+            panel.replaceChildren();
+            if (!wordPracticeSession) return;
+            const session = wordPracticeSession;
+            const heading = document.createElement('p');
+            heading.className = 'font-mono text-xs font-bold text-valo-cyan';
+            heading.textContent = `${session.period === 'daily' ? '오늘' : '주간'} 단어 복습 · ${Math.min(15, session.words.length)}문항`;
+            panel.appendChild(heading);
+
+            if (session.index >= session.words.length) {
+                const summary = document.createElement('p');
+                summary.className = 'rounded bg-valo-panel p-4 text-sm text-valo-offwhite';
+                summary.textContent = `복습 완료: ${session.words.length}개 중 ${session.correctCount}개를 맞혔습니다.`;
+                panel.appendChild(summary);
+                return;
+            }
+
+            const entry = session.words[session.index];
+            const card = document.createElement('div');
+            card.className = 'rounded border border-white/10 bg-valo-panel/60 p-4 space-y-3';
+            const progress = document.createElement('p');
+            progress.className = 'text-xs text-valo-gray';
+            progress.textContent = `문항 ${session.index + 1} / ${session.words.length} · 뜻: ${entry.meaningKo}`;
+            const sentence = document.createElement('p');
+            sentence.className = 'text-sm text-valo-offwhite leading-relaxed';
+            const escaped = entry.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            sentence.textContent = entry.exampleSentence.replace(new RegExp(`\\b${escaped}\\b`, 'i'), '________');
+            card.append(progress, sentence);
+
+            if (session.status === 'correct') {
+                const answer = document.createElement('p');
+                answer.className = 'text-sm font-bold text-emerald-300'; answer.textContent = `정답: ${entry.word}`;
+                const next = document.createElement('button');
+                next.className = 'w-full rounded bg-valo-cyan px-3 py-2 font-bold text-valo-dark';
+                next.textContent = '다음 단어';
+                next.onclick = () => { session.index += 1; session.status = 'pending'; renderEnglishWordPractice(); };
+                card.append(answer, next);
+            } else {
+                const controls = document.createElement('div');
+                controls.className = 'flex gap-2';
+                const input = document.createElement('input');
+                input.id = 'english-word-practice-answer'; input.type = 'text'; input.autocomplete = 'off';
+                input.placeholder = '빈칸에 들어갈 영어 단어';
+                input.className = 'min-w-0 flex-grow rounded border border-white/15 bg-valo-dark px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-cyan';
+                input.onkeydown = event => { if (event.key === 'Enter') checkEnglishWordPracticeAnswer(); };
+                const check = document.createElement('button');
+                check.className = 'rounded bg-valo-cyan px-3 py-2 text-sm font-bold text-valo-dark';
+                check.textContent = '확인'; check.onclick = checkEnglishWordPracticeAnswer;
+                controls.append(input, check); card.appendChild(controls);
+                if (session.status === 'wrong') {
+                    const hint = document.createElement('p');
+                    hint.className = 'text-xs text-valo-gold'; hint.textContent = '다시 입력해 보세요. 첫 글자: ' + entry.word.charAt(0);
+                    card.appendChild(hint);
+                }
+                setTimeout(() => input.focus(), 0);
+            }
+            panel.appendChild(card);
+        }
+
+        function checkEnglishWordPracticeAnswer() {
+            if (!wordPracticeSession || wordPracticeSession.index >= wordPracticeSession.words.length) return;
+            const entry = wordPracticeSession.words[wordPracticeSession.index];
+            const input = document.getElementById('english-word-practice-answer');
+            if (normalizeEnglishWord(input.value) === normalizeEnglishWord(entry.word)) {
+                wordPracticeSession.status = 'correct';
+                wordPracticeSession.correctCount += 1;
+                entry.lastPracticedAt = new Date().toISOString();
+                entry.practiceCount = (entry.practiceCount || 0) + 1;
+                saveEnglishVocabulary();
+                playTacticalSound('COMPLETE');
+            } else {
+                wordPracticeSession.status = 'wrong';
+                playTacticalSound('CLICK');
+            }
+            renderEnglishWordPractice();
         }
 
         // ==============================================
@@ -2384,11 +2726,15 @@
 
         const AI_REQUEST_LOG_KEY = 'valo_ai_request_log_v1';
         const CLUTCH_TASKS_KEY = 'valo_unresolved_tactical_tasks_v1';
+        const ENGLISH_VOCABULARY_KEY = 'valo_english_vocabulary_v1';
+        const ENGLISH_PERFECT_BONUS_KEY = 'valo_english_perfect_bonus_date_v1';
         const DAILY_VP_STORAGE_KEY = 'valo_daily_vp_earned_v1';
         const DAILY_VP_LIMIT = 30;
         let aiRequestLog = [];
         let activeProblemRequest = null;
         let unresolvedTacticalTasks = [];
+        let englishVocabulary = [];
+        let wordPracticeSession = null;
 
         function getDailyVPEarnedState() {
             let state;
@@ -2409,6 +2755,23 @@
             state.earned += awarded;
             localStorage.setItem(DAILY_VP_STORAGE_KEY, JSON.stringify(state));
             return awarded;
+        }
+
+        function isEnglishPerfectBonusClaimedToday() {
+            try { return localStorage.getItem(ENGLISH_PERFECT_BONUS_KEY) === getTodayDateString(); }
+            catch (error) { return false; }
+        }
+
+        function awardEnglishPerfectBonus() {
+            if (isEnglishPerfectBonusClaimedToday()) {
+                showToast('오늘 보너스를 이미 받았습니다', '영어 전술 분석실 완벽 보너스는 하루 한 번 받을 수 있습니다.');
+                return false;
+            }
+            localStorage.setItem(ENGLISH_PERFECT_BONUS_KEY, getTodayDateString());
+            AppState.vp += 100;
+            saveProgressToStorage();
+            showToast('PERFECT TACTICAL ENGLISH! +100 VP', '오늘의 완벽 분석 보너스를 받았습니다. 기본 VP 일일 한도와 별도로 지급됩니다.');
+            return true;
         }
 
         function toggleAIRequestMonitor(forceOpen) {
