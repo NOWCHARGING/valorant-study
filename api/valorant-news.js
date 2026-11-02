@@ -1,4 +1,4 @@
-﻿const OFFICIAL_NEWS_URL = 'https://playvalorant.com/en-us/news/';
+const OFFICIAL_NEWS_URL = 'https://playvalorant.com/en-us/news/';
 const OFFICIAL_HOST = 'playvalorant.com';
 const NEWS_WINDOW_DAYS = 30;
 
@@ -61,16 +61,26 @@ function extractRecentNews(html) {
     let url;
     try { url = new URL(decodeHtml(match[1]), OFFICIAL_NEWS_URL); } catch { continue; }
     if (url.hostname !== OFFICIAL_HOST || !/^\/en-us\/news\/(?!tags\/)[^/]+\/[^/]+\/?$/i.test(url.pathname)) continue;
+
+    // Riot includes each card's publication timestamp inside the linked card text.
+    // Prefer that timestamp so neighboring cards cannot overwrite one another.
+    const anchorText = stripMarkup(match[2]);
     const index = match.index || 0;
-    const before = html.slice(Math.max(0, index - 2200), index);
-    const after = html.slice(index, Math.min(html.length, index + match[0].length + 2200));
-    const cardStart = Math.max(before.lastIndexOf('<article'), before.lastIndexOf('<li'), before.lastIndexOf('data-testid'));
-    const context = cardStart >= 0 ? before.slice(cardStart) + after : before.slice(-900) + after.slice(0, 1500);
-    const publishedAt = parseDateFromMarkup(context);
+    const before = html.slice(Math.max(0, index - 1600), index);
+    const after = html.slice(index + match[0].length, Math.min(html.length, index + match[0].length + 1600));
+    const cardStart = Math.max(before.lastIndexOf('<article'), before.lastIndexOf('<li'));
+    const context = cardStart >= 0 ? before.slice(cardStart) + match[0] + after : before.slice(-500) + match[0] + after.slice(0, 700);
+    const publishedAt = parseDateFromMarkup(match[2]) || parseDateFromMarkup(context);
     if (!publishedAt) continue;
     const age = Date.now() - publishedAt.getTime();
     if (age < -86400000 || age > NEWS_WINDOW_DAYS * 86400000) continue;
-    const title = stripMarkup(match[2]).replace(/\s+/g, ' ');
+
+    const heading = match[2].match(/<h[1-4]\b[^>]*>([\s\S]*?)<\/h[1-4]>/i)?.[1];
+    const cleanedText = (heading ? stripMarkup(heading) : anchorText)
+      .replace(/\b20\d{2}-\d{2}-\d{2}T[\d:.+-]+Z?\b/gi, ' ')
+      .replace(/^\s*(?:community|announcements?|game updates|esports|merch|dev)\s+/i, '')
+      .replace(/\s+/g, ' ').trim();
+    const title = (heading ? cleanedText : cleanedText.split(/(?<=[.!?])\s+/)[0]).slice(0, 180);
     if (!title || unique.has(url.href)) continue;
     const summary = stripMarkup(context.replace(match[0], ' ')).slice(0, 240);
     unique.set(url.href, { id: url.pathname, title, sourceUrl: url.href, publishedAt: publishedAt.toISOString(), summary });
