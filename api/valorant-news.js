@@ -1,4 +1,13 @@
 const OFFICIAL_NEWS_URL = 'https://playvalorant.com/en-us/news/';
+const OFFICIAL_NEWS_LIST_URLS = [
+  OFFICIAL_NEWS_URL,
+  'https://playvalorant.com/en-us/news/community/',
+  'https://playvalorant.com/en-us/news/announcements/',
+  'https://playvalorant.com/en-us/news/game-updates/',
+  'https://playvalorant.com/en-us/news/esports/',
+  'https://playvalorant.com/en-us/news/dev/',
+  'https://playvalorant.com/en-us/news/merch/'
+];
 const OFFICIAL_HOST = 'playvalorant.com';
 const NEWS_WINDOW_DAYS = 30;
 
@@ -114,9 +123,24 @@ export default async function handler(req, res) {
       return res.status(200).json({ title, sourceUrl: articleUrl.href, publishedAt, sourceText });
     }
 
-    const listResponse = await fetchWithTimeout(OFFICIAL_NEWS_URL);
-    if (!listResponse.ok) throw new Error(`Riot news list returned HTTP ${listResponse.status}`);
-    const news = extractRecentNews(await listResponse.text());
+    // The landing page server markup may contain only a small first batch.
+    // Merge Riot's official category archives to include more current articles.
+    const pageResults = await Promise.allSettled(OFFICIAL_NEWS_LIST_URLS.map(async url => {
+      const response = await fetchWithTimeout(url);
+      if (!response.ok) throw new Error(`Riot news list returned HTTP ${response.status}`);
+      return response.text();
+    }));
+    const mergedNews = new Map();
+    for (const result of pageResults) {
+      if (result.status !== 'fulfilled') continue;
+      for (const item of extractRecentNews(result.value)) {
+        const existing = mergedNews.get(item.sourceUrl);
+        if (!existing || item.title.length > existing.title.length) mergedNews.set(item.sourceUrl, item);
+      }
+    }
+    const news = [...mergedNews.values()]
+      .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+      .slice(0, 50);
     if (!news.length) throw new Error('No VALORANT news from the last 30 days was found.');
     res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=1800');
     return res.status(200).json({ news, windowDays: NEWS_WINDOW_DAYS });
