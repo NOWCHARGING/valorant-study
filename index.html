@@ -506,7 +506,7 @@
                     <i class="ph-fill ph-lightning text-3xl"></i>
                 </div>
 
-                <div class="space-y-1">
+                <div id="tactical-english-news-picker" class="space-y-1">
                     <span class="font-mono text-xs font-bold text-valo-cyan uppercase tracking-widest">COOLDOWN COMPLETE // DECISION TIME</span>
                     <h3 class="font-display text-2xl sm:text-3xl font-bold text-valo-offwhite">
                         10분 재충전 완료! 다음 작전을 선택하라
@@ -885,17 +885,23 @@
                     <p id="tactical-english-news-count" class="text-xs text-valo-gray" aria-live="polite">뉴스 목록을 불러오는 중...</p>
                 </div>
                 <div id="tactical-english-lesson" class="space-y-4"></div>
-                <section class="rounded border border-valo-gold/30 bg-valo-dark/50 p-4 sm:p-5 space-y-4">
+                <button id="tactical-english-deep-open" onclick="openTacticalEnglishDeepAnalysis()" class="w-full rounded border border-valo-cyan/40 bg-valo-cyan/10 px-4 py-3 text-sm font-bold text-valo-cyan hover:bg-valo-cyan/20">정밀 분석 필요 · 뉴스 전체로 확장 학습</button>
+                <section id="tactical-english-vocabulary-panel" class="rounded border border-valo-gold/30 bg-valo-dark/50 p-4 sm:p-5 space-y-4">
                     <div>
                         <h3 class="font-display text-lg font-bold text-valo-gold">전술 단어장 & 반복 훈련</h3>
-                        <p class="text-xs text-valo-gray mt-1">지문에서 단어를 눌러 모르는 단어로 체크하거나, 학교 단어를 뜻·예문과 함께 등록하세요.</p>
+                        <p class="text-xs text-valo-gray mt-1">학교 단어는 영문만 입력하면 먼저 저장되고, AI가 뜻과 예문을 채웁니다.</p>
                     </div>
-                    <form class="grid grid-cols-1 md:grid-cols-4 gap-2" onsubmit="addSchoolVocabulary(event)">
-                        <input id="school-vocab-word" required type="text" placeholder="학교 단어 (English)" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-gold">
-                        <input id="school-vocab-meaning" required type="text" placeholder="뜻 (한국어)" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-gold">
-                        <input id="school-vocab-example" required type="text" placeholder="예문에 단어 포함" class="min-w-0 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-gold">
-                        <button class="rounded bg-valo-gold/20 border border-valo-gold/40 px-3 py-2 text-sm font-bold text-valo-gold">학교 단어 저장</button>
+                    <form class="flex flex-col sm:flex-row gap-2" onsubmit="addSchoolVocabulary(event)">
+                        <input id="school-vocab-word" required type="text" autocomplete="off" placeholder="학교 단어 (English) · 입력 후 Enter" class="min-w-0 flex-1 bg-valo-dark border border-white/15 rounded px-3 py-2 text-sm text-valo-offwhite outline-none focus:border-valo-gold">
+                        <button class="rounded bg-valo-gold/20 border border-valo-gold/40 px-4 py-2 text-sm font-bold text-valo-gold">저장 + 뜻·예문 생성</button>
                     </form>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="retryPendingEnglishVocabulary()" class="rounded border border-valo-gold/30 px-3 py-2 text-xs text-valo-gold">뜻·예문 미완성 단어 채우기</button>
+                        <button onclick="exportEnglishVocabulary()" class="rounded border border-valo-cyan/30 px-3 py-2 text-xs text-valo-cyan">단어장 백업 파일</button>
+                        <button onclick="document.getElementById('english-vocab-import-file').click()" class="rounded border border-white/20 px-3 py-2 text-xs text-valo-offwhite">백업 가져오기</button>
+                        <input id="english-vocab-import-file" type="file" accept="application/json,.json" class="hidden" onchange="importEnglishVocabulary(event)">
+                    </div>
+                    <p class="text-[11px] text-valo-gray">IndexedDB를 우선 사용하고 미지원 시 브라우저 저장소를 사용합니다. 브라우저 초기화·기기 변경에 대비해 JSON 백업 파일을 보관해 주세요.</p>
                     <div class="flex flex-wrap items-center gap-2">
                         <button id="english-vocab-save-unknown" onclick="saveUnknownWordsAsVocabulary()" disabled class="rounded border border-valo-cyan/40 bg-valo-cyan/10 px-3 py-2 text-xs font-bold text-valo-cyan disabled:opacity-40">체크한 단어 뜻·예문 만들기 (<span id="english-vocab-selected-count">0</span>)</button>
                         <span id="english-vocab-status" class="text-xs text-valo-gray" aria-live="polite"></span>
@@ -909,6 +915,19 @@
                     </div>
                     <div id="english-word-practice-panel" class="space-y-3"></div>
                     <div id="english-vocabulary-bank" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+                </section>
+                <section id="tactical-english-deep-panel" class="hidden rounded border border-valo-cyan/35 bg-valo-dark/60 p-4 sm:p-6 space-y-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div><span class="font-mono text-xs text-valo-cyan font-bold">ENGLISH // DEEP ANALYSIS</span><h3 class="font-display text-xl font-bold text-valo-offwhite mt-1">뉴스 정밀 분석</h3><p class="text-xs text-valo-gray mt-1">원문을 읽으며 모르는 단어를 눌러 체크하세요. 3문장 요약과 빈칸은 AI가 한 번에 준비합니다.</p></div>
+                        <button onclick="closeTacticalEnglishDeepAnalysis()" class="shrink-0 rounded border border-white/20 px-3 py-2 text-xs text-valo-offwhite">전술 브리핑으로</button>
+                    </div>
+                    <p id="tactical-english-deep-status" class="text-xs text-valo-gold" aria-live="polite"></p>
+                    <div id="tactical-english-deep-summary" class="space-y-3"></div>
+                    <details class="rounded border border-white/10 bg-valo-panel/50 p-3">
+                        <summary class="cursor-pointer text-sm font-bold text-valo-offwhite">영문 뉴스 전체 보기 · 모르는 단어 체크</summary>
+                        <p id="tactical-english-full-article" class="mt-3 whitespace-pre-line break-words text-sm leading-7 text-valo-offwhite"></p>
+                    </details>
+                    <button id="tactical-english-deep-save-words" onclick="saveUnknownWordsAsVocabulary()" class="rounded border border-valo-cyan/40 bg-valo-cyan/10 px-4 py-2 text-sm font-bold text-valo-cyan disabled:opacity-40" disabled>체크한 단어 저장 · <span id="tactical-english-deep-word-count">0</span>개</button>
                 </section>
             </div>
         </section>
@@ -1656,7 +1675,7 @@
             loadProgressFromStorage();
             loadAIRequestLog();
             loadClutchTasks();
-            loadEnglishVocabulary();
+            englishVocabularyReady = loadEnglishVocabulary();
             const todayStr = getTodayDateString();
             document.getElementById('modal-today-date').textContent = todayStr.replace(/-/g, '.');
 
@@ -1783,6 +1802,8 @@
         let tacticalEnglishRequestPending = false;
         let tacticalEnglish429CooldownUntil = 0;
         let tacticalEnglishStage = 'reading';
+        let tacticalEnglishDeepMode = false;
+        let tacticalEnglishDeepData = null;
 
         function openTacticalEnglishLab() {
             document.getElementById('lobby-view').classList.add('hidden');
@@ -1794,8 +1815,148 @@
         }
 
         function closeTacticalEnglishLab() {
+            closeTacticalEnglishDeepAnalysis();
             document.getElementById('tactical-english-view').classList.add('hidden');
             document.getElementById('lobby-view').classList.remove('hidden');
+        }
+
+        async function openTacticalEnglishDeepAnalysis() {
+            if (!tacticalEnglishLesson?.source?.sourceText) {
+                showToast('뉴스 지문을 먼저 준비해 주세요', '전술 브리핑에서 뉴스 학습을 시작한 뒤 정밀 분석을 열 수 있습니다.');
+                return;
+            }
+            tacticalEnglishDeepMode = true;
+            for (const id of ['tactical-english-news-picker', 'tactical-english-lesson', 'tactical-english-deep-open', 'tactical-english-vocabulary-panel']) {
+                document.getElementById(id)?.classList.add('hidden');
+            }
+            document.getElementById('tactical-english-deep-panel').classList.remove('hidden');
+            const article = document.getElementById('tactical-english-full-article');
+            article.replaceChildren();
+            tacticalEnglishLesson.source.sourceText.split(/(\b[A-Za-z][A-Za-z'-]*\b)/g).forEach(part => {
+                if (/^[A-Za-z][A-Za-z'-]*$/.test(part)) {
+                    const word = document.createElement('button');
+                    const key = normalizeEnglishWord(part);
+                    const marked = tacticalEnglishLesson.unknownWords?.includes(key);
+                    word.type = 'button'; word.textContent = part;
+                    word.className = marked ? 'inline rounded px-0.5 bg-valo-gold/25 text-valo-gold underline decoration-dotted' : 'inline rounded px-0.5 hover:bg-valo-cyan/15 hover:text-valo-cyan';
+                    word.title = marked ? '체크 해제' : '모르는 단어 체크';
+                    word.onclick = () => toggleUnknownEnglishWord(part);
+                    article.appendChild(word);
+                } else article.appendChild(document.createTextNode(part));
+            });
+            renderDeepUnknownWordCount();
+
+            const cacheKey = `valo_tactical_deep_${encodeURIComponent(tacticalEnglishLesson.source.sourceUrl)}`;
+            try { tacticalEnglishDeepData = JSON.parse(localStorage.getItem(cacheKey) || 'null'); } catch { tacticalEnglishDeepData = null; }
+            if (tacticalEnglishDeepData?.summarySentences?.length === 3 && tacticalEnglishDeepData?.keyWords?.length === 3) {
+                document.getElementById('tactical-english-deep-status').textContent = '저장된 정밀 분석 자료를 불러왔습니다.';
+                renderTacticalEnglishDeepSummary();
+                return;
+            }
+
+            const status = document.getElementById('tactical-english-deep-status');
+            status.textContent = '뉴스 전체 내용을 바탕으로 요약과 빈칸 연습을 만드는 중입니다...';
+            const schema = {
+                type: 'OBJECT',
+                properties: {
+                    summarySentences: { type: 'ARRAY', items: { type: 'STRING' } },
+                    keyWords: { type: 'ARRAY', items: { type: 'STRING' } }
+                },
+                required: ['summarySentences', 'keyWords']
+            };
+            try {
+                const raw = await callGeminiAPI({
+                    feature: '영어 뉴스 정밀 분석',
+                    systemPrompt: 'Create a faithful English summary of the supplied article in exactly three concise sentences for a Korean 9th-grade learner. Choose exactly one useful vocabulary word from each sentence. Return the original complete sentences and the exact lowercase lemma or inflected form appearing in each sentence. Never add unsupported facts.',
+                    userPrompt: `Article title: ${tacticalEnglishLesson.source.title}\nArticle URL: ${tacticalEnglishLesson.source.sourceUrl}\nFull article text:\n${tacticalEnglishLesson.source.sourceText}`,
+                    responseSchema: schema
+                });
+                const data = JSON.parse(raw);
+                if (!Array.isArray(data.summarySentences) || data.summarySentences.length !== 3 || !Array.isArray(data.keyWords) || data.keyWords.length !== 3 || data.summarySentences.some((sentence, index) => typeof sentence !== 'string' || !data.keyWords[index] || !new RegExp(`\\b${String(data.keyWords[index]).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b`, 'i').test(sentence))) {
+                    throw new Error('요약 형식이 올바르지 않습니다.');
+                }
+                tacticalEnglishDeepData = { summarySentences: data.summarySentences, keyWords: data.keyWords.map(word => String(word).trim()) };
+                try { localStorage.setItem(cacheKey, JSON.stringify(tacticalEnglishDeepData)); } catch { /* Keep the current analysis available if browser storage is full. */ }
+                status.textContent = '정밀 분석 준비 완료 · 첫 단계는 핵심 단어 1개부터 가립니다.';
+                renderTacticalEnglishDeepSummary();
+            } catch (error) {
+                console.error('[ENGLISH DEEP ANALYSIS] Generation failed:', error);
+                status.textContent = '요약 생성에 실패했습니다. 연결을 확인한 뒤 정밀 분석을 다시 열어 주세요.';
+            }
+        }
+
+        function closeTacticalEnglishDeepAnalysis() {
+            tacticalEnglishDeepMode = false;
+            document.getElementById('tactical-english-deep-panel')?.classList.add('hidden');
+            for (const id of ['tactical-english-news-picker', 'tactical-english-lesson', 'tactical-english-deep-open', 'tactical-english-vocabulary-panel']) {
+                document.getElementById(id)?.classList.remove('hidden');
+            }
+        }
+
+        function renderDeepUnknownWordCount() {
+            const count = tacticalEnglishLesson?.unknownWords?.length || 0;
+            const button = document.getElementById('tactical-english-deep-save-words');
+            if (button) button.disabled = count === 0;
+            const label = document.getElementById('tactical-english-deep-word-count');
+            if (label) label.textContent = String(count);
+        }
+
+        function renderTacticalEnglishDeepSummary() {
+            const host = document.getElementById('tactical-english-deep-summary');
+            host.replaceChildren();
+            if (!tacticalEnglishDeepData) return;
+            const progressKey = `valo_tactical_deep_level_${encodeURIComponent(tacticalEnglishLesson.source.sourceUrl)}`;
+            let level = 1;
+            try { level = Math.min(3, Math.max(1, Number(localStorage.getItem(progressKey)) || 1)); } catch { /* Start at level one. */ }
+            const intro = document.createElement('p');
+            intro.className = 'text-xs font-bold text-valo-gold';
+            intro.textContent = `3문장 요약 복원 · 난이도 ${level}/3 · 빈칸 ${level}개`;
+            host.appendChild(intro);
+            tacticalEnglishDeepData.summarySentences.forEach((sentence, index) => {
+                const row = document.createElement('label');
+                row.className = 'block rounded border border-white/10 bg-valo-panel/60 p-3 text-sm leading-relaxed text-valo-offwhite';
+                if (index < level) {
+                    const word = tacticalEnglishDeepData.keyWords[index];
+                    const escaped = escapeRegExp(word);
+                    const parts = sentence.split(new RegExp(`(\\b${escaped}\\b)`, 'i'));
+                    row.appendChild(document.createTextNode(parts[0] || ''));
+                    const input = document.createElement('input');
+                    input.type = 'text'; input.autocomplete = 'off'; input.dataset.expected = word;
+                    input.setAttribute('aria-label', `요약 ${index + 1}번째 빈칸`);
+                    input.placeholder = `핵심 단어 ${index + 1}`;
+                    input.className = 'mx-1 inline-block w-32 rounded border border-valo-cyan/40 bg-valo-dark px-2 py-1 text-sm text-valo-cyan outline-none focus:border-valo-cyan';
+                    row.appendChild(input);
+                    row.appendChild(document.createTextNode(parts.slice(2).join('') || ''));
+                } else row.textContent = sentence;
+                host.appendChild(row);
+            });
+            const actions = document.createElement('div');
+            actions.className = 'flex flex-wrap items-center gap-2';
+            const check = document.createElement('button');
+            check.className = 'rounded bg-valo-cyan px-4 py-2 text-sm font-bold text-valo-dark';
+            check.textContent = '빈칸 확인';
+            check.onclick = () => {
+                const inputs = [...host.querySelectorAll('input[data-expected]')];
+                const allCorrect = inputs.every(input => normalizeEnglishWord(input.value) === normalizeEnglishWord(input.dataset.expected));
+                if (!allCorrect) {
+                    document.getElementById('tactical-english-deep-status').textContent = '빈칸을 다시 확인해 보세요. 첫 글자와 문장 의미를 단서로 활용하세요.';
+                    return;
+                }
+                document.getElementById('tactical-english-deep-status').textContent = '정답입니다. 원문에서 사용된 핵심 단어를 문맥으로 복원했습니다.';
+                if (level < 3) {
+                    try { localStorage.setItem(progressKey, String(level + 1)); } catch { /* Continue for this view. */ }
+                    renderTacticalEnglishDeepSummary();
+                } else {
+                    document.getElementById('tactical-english-deep-status').textContent += ' 3단계까지 완료했습니다.';
+                }
+            };
+            actions.appendChild(check);
+            const full = document.createElement('button');
+            full.className = 'rounded border border-white/20 px-4 py-2 text-sm text-valo-offwhite';
+            full.textContent = '요약 전체 보기';
+            full.onclick = () => { [...host.querySelectorAll('input[data-expected]')].forEach((input, index) => { input.parentElement.textContent = tacticalEnglishDeepData.summarySentences[index]; }); };
+            actions.appendChild(full);
+            host.appendChild(actions);
         }
 
         function renderTacticalEnglishLesson() {
@@ -2003,7 +2164,11 @@
                 status.textContent = `공식 뉴스 원문을 불러오는 중: ${chosen.title}`;
                 const articleResponse = await fetch(`/api/valorant-news?url=${encodeURIComponent(chosen.sourceUrl)}`);
                 const source = await articleResponse.json().catch(() => ({}));
-                if (!articleResponse.ok) throw new Error(source.error || '공식 뉴스 본문 요청 실패');
+                if (!articleResponse.ok) {
+                    const articleError = new Error(source.error || '공식 뉴스 본문 요청 실패');
+                    articleError.publicMessage = source.error || '';
+                    throw articleError;
+                }
 
                 const responseSchema = {
                     type: 'OBJECT',
@@ -2061,11 +2226,12 @@
                 if (loadingStage === 'gemini' && Number(error?.status) === 429) {
                     tacticalEnglish429CooldownUntil = Date.now() + 15000;
                 }
+                const articleFailure = typeof error?.publicMessage === 'string' ? error.publicMessage : '';
                 const geminiStatus = Number(error?.status);
                 const failureMessage = loadingStage === 'news'
                     ? '공식 뉴스 목록을 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요.'
                     : loadingStage === 'article'
-                        ? '뉴스 목록은 표시했지만 선택한 원문을 불러오지 못했습니다.'
+                        ? (articleFailure || '뉴스 목록은 표시했지만 선택한 원문을 불러오지 못했습니다.')
                         : loadingStage === 'gemini'
                             ? geminiStatus === 429
                                 ? 'AI 사용량이 잠시 제한됐습니다. 15초 정도 기다린 뒤 다시 시도해 주세요.'
@@ -2090,26 +2256,76 @@
             return String(word || '').trim().toLowerCase().replace(/[^a-z'-]/g, '');
         }
 
-        function loadEnglishVocabulary() {
+        const ENGLISH_VOCABULARY_DB = 'valorant-study-local-data';
+        let englishVocabularyReady = Promise.resolve();
+
+        function openEnglishVocabularyDatabase() {
+            if (!('indexedDB' in window)) return Promise.reject(new Error('IndexedDB를 사용할 수 없습니다.'));
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(ENGLISH_VOCABULARY_DB, 1);
+                request.onupgradeneeded = () => {
+                    if (!request.result.objectStoreNames.contains('vocabulary')) request.result.createObjectStore('vocabulary', { keyPath: 'id' });
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error || new Error('단어 데이터베이스를 열지 못했습니다.'));
+            });
+        }
+
+        async function readEnglishVocabularyFromDatabase() {
+            const db = await openEnglishVocabularyDatabase();
+            return new Promise((resolve, reject) => {
+                const request = db.transaction('vocabulary', 'readonly').objectStore('vocabulary').get('all');
+                request.onsuccess = () => resolve(Array.isArray(request.result?.items) ? request.result.items : []);
+                request.onerror = () => reject(request.error || new Error('저장 단어를 읽지 못했습니다.'));
+            });
+        }
+
+        async function writeEnglishVocabularyToDatabase(items) {
+            const db = await openEnglishVocabularyDatabase();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction('vocabulary', 'readwrite');
+                transaction.objectStore('vocabulary').put({ id: 'all', items });
+                transaction.oncomplete = () => resolve(true);
+                transaction.onerror = () => reject(transaction.error || new Error('단어를 저장하지 못했습니다.'));
+                transaction.onabort = () => reject(transaction.error || new Error('단어 저장이 중단됐습니다.'));
+            });
+        }
+
+        async function loadEnglishVocabulary() {
             try {
                 const stored = JSON.parse(localStorage.getItem(ENGLISH_VOCABULARY_KEY) || '[]');
-                englishVocabulary = Array.isArray(stored) ? stored.filter(item => item && item.word && item.meaningKo && item.exampleSentence) : [];
+                englishVocabulary = Array.isArray(stored) ? stored.filter(item => item && item.word) : [];
             } catch (error) {
                 englishVocabulary = [];
+            }
+            try {
+                const indexedItems = await readEnglishVocabularyFromDatabase();
+                const merged = new Map(indexedItems.filter(item => item?.word).map(item => [normalizeEnglishWord(item.word), item]));
+                englishVocabulary.forEach(item => merged.set(normalizeEnglishWord(item.word), { ...merged.get(normalizeEnglishWord(item.word)), ...item }));
+                englishVocabulary = [...merged.values()];
+            } catch (error) {
+                console.info('[ENGLISH VOCAB] Using browser localStorage fallback.', error.message);
             }
             renderEnglishVocabularyBank();
         }
 
-        function saveEnglishVocabulary() {
+        async function saveEnglishVocabulary() {
+            let saved = false;
             try {
                 localStorage.setItem(ENGLISH_VOCABULARY_KEY, JSON.stringify(englishVocabulary));
-                renderEnglishVocabularyBank();
-                return true;
+                saved = true;
             } catch (error) {
-                console.warn('[ENGLISH VOCAB] Local vocabulary could not be saved.', error);
-                showToast('단어 저장 실패', '브라우저 저장 공간을 확인해 주세요.');
-                return false;
+                console.warn('[ENGLISH VOCAB] localStorage is full; trying IndexedDB.', error);
             }
+            try {
+                await writeEnglishVocabularyToDatabase(englishVocabulary);
+                saved = true;
+            } catch (error) {
+                console.warn('[ENGLISH VOCAB] IndexedDB save failed.', error);
+            }
+            renderEnglishVocabularyBank();
+            if (!saved) showToast('단어 저장 실패', '브라우저 저장 공간을 확인하거나 단어장 백업을 내려받아 주세요.');
+            return saved;
         }
 
         function upsertEnglishVocabulary(word, meaningKo, exampleSentence, source, partOfSpeech = '') {
@@ -2140,10 +2356,12 @@
             const list = document.getElementById('english-vocabulary-bank');
             const count = document.getElementById('english-vocab-count');
             if (!list || !count) return;
-            count.textContent = `저장 단어 ${englishVocabulary.length}개 · 10개부터 오늘·주간 타이핑 연습 가능`;
+            const readyCount = englishVocabulary.filter(item => item.meaningKo && item.exampleSentence).length;
+            const pendingCount = englishVocabulary.length - readyCount;
+            count.textContent = `저장 ${englishVocabulary.length}개 · 학습 준비 ${readyCount}개${pendingCount ? ` · 뜻 생성 대기 ${pendingCount}개` : ''} · 10개부터 타이핑 연습 가능`;
             for (const id of ['english-word-practice-daily', 'english-word-practice-weekly']) {
                 const button = document.getElementById(id);
-                if (button) button.disabled = englishVocabulary.length < 10;
+                if (button) button.disabled = readyCount < 10;
             }
             list.replaceChildren();
             if (englishVocabulary.length === 0) {
@@ -2163,10 +2381,10 @@
                 const pos = document.createElement('span');
                 pos.className = 'text-[10px] text-valo-gray'; pos.textContent = item.partOfSpeech || '';
                 const meaning = document.createElement('span');
-                meaning.className = 'text-xs text-valo-offwhite'; meaning.textContent = item.meaningKo;
+                meaning.className = 'text-xs text-valo-offwhite'; meaning.textContent = item.meaningKo || 'AI 뜻 생성 대기';
                 title.append(word, pos, meaning);
                 const example = document.createElement('p');
-                example.className = 'text-xs text-valo-cyan/90'; example.textContent = item.exampleSentence;
+                example.className = 'text-xs text-valo-cyan/90'; example.textContent = item.exampleSentence || '예문 생성 대기 · 위 버튼으로 다시 시도할 수 있습니다.';
                 const source = document.createElement('p');
                 source.className = 'text-[10px] text-valo-gray'; source.textContent = `출처: ${(item.sources || []).join(' · ')}`;
                 card.append(title, example, source);
@@ -2174,20 +2392,21 @@
             });
         }
 
-        function addSchoolVocabulary(event) {
+        async function addSchoolVocabulary(event) {
             event.preventDefault();
+            await englishVocabularyReady;
             const word = document.getElementById('school-vocab-word').value.trim();
-            const meaning = document.getElementById('school-vocab-meaning').value.trim();
-            const example = document.getElementById('school-vocab-example').value.trim();
-            const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            if (!word || /\s/.test(word) || !meaning || !new RegExp(`\\b${escaped}\\b`, 'i').test(example)) {
-                showToast('단어 정보를 확인해 주세요', '한 단어, 한국어 뜻, 해당 단어가 들어간 영어 예문을 입력해 주세요.');
+            if (!/^[A-Za-z]+(?:[-'][A-Za-z]+)*$/.test(word)) {
+                showToast('영문 단어를 확인해 주세요', '영어 단어 하나만 입력해 주세요.');
                 return;
             }
-            upsertEnglishVocabulary(word, meaning, example, '학교 단어');
-            if (!saveEnglishVocabulary()) return;
+            upsertEnglishVocabulary(word, '', '', '학교 단어');
+            const item = englishVocabulary.find(entry => entry.key === normalizeEnglishWord(word));
+            if (item) item.lookupPending = true;
+            if (!await saveEnglishVocabulary()) return;
             event.target.reset();
-            showToast('학교 단어 저장 완료', `${word}의 뜻과 예문을 단어장에 추가했습니다.`);
+            showToast('단어를 먼저 저장했습니다', `${word}의 뜻과 예문을 AI가 채우는 중입니다.`);
+            await enrichEnglishVocabulary([word]);
         }
 
         function toggleUnknownEnglishWord(word) {
@@ -2199,6 +2418,23 @@
             else selected.push(key);
             updateUnknownEnglishWordSelection();
             renderTacticalEnglishLesson();
+            renderDeepUnknownWordCount();
+            if (tacticalEnglishDeepMode) openTacticalEnglishDeepArticleOnly();
+        }
+
+        function openTacticalEnglishDeepArticleOnly() {
+            if (!tacticalEnglishLesson?.source?.sourceText) return;
+            const article = document.getElementById('tactical-english-full-article');
+            article.replaceChildren();
+            tacticalEnglishLesson.source.sourceText.split(/(\b[A-Za-z][A-Za-z'-]*\b)/g).forEach(part => {
+                if (/^[A-Za-z][A-Za-z'-]*$/.test(part)) {
+                    const key = normalizeEnglishWord(part), marked = tacticalEnglishLesson.unknownWords.includes(key);
+                    const word = document.createElement('button'); word.type = 'button'; word.textContent = part;
+                    word.className = marked ? 'inline rounded px-0.5 bg-valo-gold/25 text-valo-gold underline decoration-dotted' : 'inline rounded px-0.5 hover:bg-valo-cyan/15 hover:text-valo-cyan';
+                    word.title = marked ? '체크 해제' : '모르는 단어 체크'; word.onclick = () => toggleUnknownEnglishWord(part);
+                    article.appendChild(word);
+                } else article.appendChild(document.createTextNode(part));
+            });
         }
 
         function updateUnknownEnglishWordSelection() {
@@ -2207,20 +2443,27 @@
             const button = document.getElementById('english-vocab-save-unknown');
             if (count) count.textContent = String(selected.length);
             if (button) button.disabled = selected.length === 0;
+            renderDeepUnknownWordCount();
         }
 
         async function saveUnknownWordsAsVocabulary() {
+            await englishVocabularyReady;
             if (!tacticalEnglishLesson?.unknownWords?.length) {
                 showToast('단어를 먼저 체크하세요', '전술 지문에서 모르는 단어를 눌러 선택해 주세요.');
                 return;
             }
             const selectedKeys = new Set(tacticalEnglishLesson.unknownWords);
-            const words = [...new Set((tacticalEnglishLesson.passage.match(/\b[A-Za-z][A-Za-z'-]*\b/g) || [])
+            const textSource = tacticalEnglishDeepMode ? tacticalEnglishLesson.source.sourceText : tacticalEnglishLesson.passage;
+            const words = [...new Set((textSource.match(/\b[A-Za-z][A-Za-z'-]*\b/g) || [])
                 .filter(word => selectedKeys.has(normalizeEnglishWord(word))))];
-            const button = document.getElementById('english-vocab-save-unknown');
+            const button = tacticalEnglishDeepMode
+                ? document.getElementById('tactical-english-deep-save-words')
+                : document.getElementById('english-vocab-save-unknown');
             const status = document.getElementById('english-vocab-status');
+            const deepStatus = document.getElementById('tactical-english-deep-status');
             button.disabled = true;
-            status.textContent = '뜻과 새 예문을 만드는 중입니다...';
+            if (status) status.textContent = '뜻과 새 예문을 만드는 중입니다...';
+            if (tacticalEnglishDeepMode && deepStatus) deepStatus.textContent = '체크한 단어의 뜻과 예문을 만드는 중입니다...';
             try {
                 const responseSchema = {
                     type: 'ARRAY',
@@ -2238,31 +2481,114 @@
                 const entries = JSON.parse(await callGeminiAPI({
                     feature: '전술 단어장',
                     systemPrompt: 'For each requested English word, explain its meaning in the supplied VALORANT patch-reading context, give a concise Korean meaning and part of speech, and write one original, natural English example sentence containing the exact word form. Return one entry for every requested word. Do not copy sentences from the article.',
-                    userPrompt: `Context passage:\n${tacticalEnglishLesson.passage}\n\nWords to save:\n${words.join(', ')}`,
+                    userPrompt: `Context passage:\n${textSource}\n\nWords to save:\n${words.join(', ')}`,
                     responseSchema
                 }));
                 if (!Array.isArray(entries)) throw new Error('단어 설명 형식이 올바르지 않습니다.');
                 const byKey = new Map(entries.map(entry => [normalizeEnglishWord(entry.word), entry]));
+                const unresolvedWords = [];
+                let savedCount = 0;
                 for (const word of words) {
                     const entry = byKey.get(normalizeEnglishWord(word));
-                    if (!entry?.meaningKo || !entry?.exampleSentence) throw new Error(`${word}의 뜻이나 예문을 만들지 못했습니다.`);
-                    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    if (!new RegExp(`\\b${escapedWord}\\b`, 'i').test(entry.exampleSentence)) throw new Error(`${word}가 포함된 예문을 만들지 못했습니다.`);
+                    if (!entry?.meaningKo || !entry?.exampleSentence || !new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(entry.exampleSentence)) {
+                        unresolvedWords.push(normalizeEnglishWord(word));
+                        continue;
+                    }
                     upsertEnglishVocabulary(word, entry.meaningKo, entry.exampleSentence, '전술 분석실', entry.partOfSpeech);
+                    savedCount += 1;
                 }
-                if (!saveEnglishVocabulary()) throw new Error('브라우저 단어장에 저장하지 못했습니다.');
-                tacticalEnglishLesson.unknownWords = [];
+                if (!savedCount) throw new Error('뜻과 예문을 받은 단어가 없습니다.');
+                if (!await saveEnglishVocabulary()) throw new Error('브라우저 단어장에 저장하지 못했습니다.');
+                tacticalEnglishLesson.unknownWords = unresolvedWords;
                 updateUnknownEnglishWordSelection();
+                renderDeepUnknownWordCount();
+                if (tacticalEnglishDeepMode) openTacticalEnglishDeepArticleOnly();
                 renderTacticalEnglishLesson();
-                status.textContent = `${words.length}개 단어의 뜻과 예문을 저장했습니다.`;
+                const resultMessage = `${savedCount}개 저장 완료${unresolvedWords.length ? ` · ${unresolvedWords.length}개는 체크 상태로 남겼습니다` : ''}`;
+                if (status) status.textContent = `${resultMessage}.`;
+                if (tacticalEnglishDeepMode && deepStatus) deepStatus.textContent = `${resultMessage}.`;
             } catch (error) {
                 console.error('[ENGLISH VOCAB] Word lookup failed:', error);
-                status.textContent = '단어 정보를 가져오지 못했습니다. 다시 시도해 주세요.';
+                if (status) status.textContent = '단어 정보를 가져오지 못했습니다. 다시 시도해 주세요.';
+                if (tacticalEnglishDeepMode && deepStatus) deepStatus.textContent = '뜻·예문을 만들지 못했습니다. 단어는 보존되어 있으니 단어장 미완성 채우기로 재시도할 수 있습니다.';
                 button.disabled = false;
             }
         }
 
-        function startEnglishWordPractice(period) {
+        async function enrichEnglishVocabulary(words) {
+            await englishVocabularyReady;
+            const uniqueWords = [...new Set(words.map(normalizeEnglishWord).filter(Boolean))];
+            if (!uniqueWords.length) return;
+            const status = document.getElementById('english-vocab-status');
+            if (status) status.textContent = `${uniqueWords.length}개 단어의 뜻과 예문을 만드는 중입니다...`;
+            try {
+                const schema = { type: 'ARRAY', items: { type: 'OBJECT', properties: { word: { type: 'STRING' }, meaningKo: { type: 'STRING' }, partOfSpeech: { type: 'STRING' }, exampleSentence: { type: 'STRING' } }, required: ['word', 'meaningKo', 'partOfSpeech', 'exampleSentence'] } };
+                const result = JSON.parse(await callGeminiAPI({
+                    feature: '학교 단어 뜻·예문 생성',
+                    systemPrompt: 'For every supplied English vocabulary word, return a concise Korean meaning, part of speech, and one natural original English example suitable for a Korean 9th-grade learner. Include the exact requested word in its example. Do not omit any requested word.',
+                    userPrompt: `Words: ${uniqueWords.join(', ')}`,
+                    responseSchema: schema
+                }));
+                if (!Array.isArray(result)) throw new Error('AI 단어 결과 형식이 올바르지 않습니다.');
+                const byKey = new Map(result.map(entry => [normalizeEnglishWord(entry.word), entry]));
+                let savedCount = 0;
+                for (const word of uniqueWords) {
+                    const entry = byKey.get(word);
+                    const item = englishVocabulary.find(candidate => candidate.key === word);
+                    if (!item || !entry?.meaningKo || !entry?.exampleSentence || !new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i').test(entry.exampleSentence)) continue;
+                    item.meaningKo = entry.meaningKo; item.partOfSpeech = entry.partOfSpeech || '';
+                    item.exampleSentence = entry.exampleSentence; item.lookupPending = false;
+                    item.sources ||= ['학교 단어'];
+                    savedCount += 1;
+                }
+                if (!savedCount) throw new Error('뜻과 예문을 받은 단어가 없습니다.');
+                if (!await saveEnglishVocabulary()) throw new Error('단어 저장 공간을 확인해 주세요.');
+                if (status) status.textContent = `${savedCount}개 단어의 뜻과 예문을 저장했습니다.${savedCount < uniqueWords.length ? ` ${uniqueWords.length - savedCount}개는 미완성 목록에 남았습니다.` : ''}`;
+            } catch (error) {
+                console.error('[ENGLISH VOCAB] AI enrichment failed:', error);
+                if (status) status.textContent = '영문 단어는 저장했습니다. 뜻·예문 생성은 미완성 단어 채우기로 다시 시도할 수 있습니다.';
+                renderEnglishVocabularyBank();
+            }
+        }
+
+        async function retryPendingEnglishVocabulary() {
+            await englishVocabularyReady;
+            const pending = englishVocabulary.filter(item => !item.meaningKo || !item.exampleSentence).map(item => item.word);
+            if (!pending.length) { showToast('미완성 단어가 없습니다', '저장된 단어의 뜻과 예문이 모두 준비되어 있습니다.'); return; }
+            await enrichEnglishVocabulary(pending);
+        }
+
+        function exportEnglishVocabulary() {
+            const payload = { format: 'valorant-study-vocabulary', version: 1, exportedAt: new Date().toISOString(), words: englishVocabulary };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a'); link.href = url; link.download = `valorant-study-vocabulary-${new Date().toISOString().slice(0, 10)}.json`;
+            link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        async function importEnglishVocabulary(event) {
+            await englishVocabularyReady;
+            const file = event.target.files?.[0];
+            if (!file) return;
+            try {
+                const parsed = JSON.parse(await file.text());
+                const imported = Array.isArray(parsed) ? parsed : parsed.words;
+                if (!Array.isArray(imported)) throw new Error('단어 목록을 찾지 못했습니다.');
+                for (const entry of imported) {
+                    if (!entry?.word) continue;
+                    upsertEnglishVocabulary(entry.word, entry.meaningKo || '', entry.exampleSentence || '', (entry.sources || ['백업 가져오기'])[0], entry.partOfSpeech || '');
+                    const merged = englishVocabulary.find(item => item.key === normalizeEnglishWord(entry.word));
+                    Object.assign(merged, { ...entry, key: normalizeEnglishWord(entry.word) });
+                }
+                if (!await saveEnglishVocabulary()) throw new Error('브라우저 저장 공간이 부족합니다.');
+                showToast('단어장 복원 완료', `${imported.length}개 항목을 가져왔습니다.`);
+            } catch (error) {
+                showToast('백업 파일을 읽지 못했습니다', error.message || 'JSON 단어장 파일인지 확인해 주세요.');
+            } finally { event.target.value = ''; }
+        }
+
+        async function startEnglishWordPractice(period) {
+            await englishVocabularyReady;
             const available = englishVocabulary.filter(item => item.word && item.exampleSentence && item.meaningKo);
             if (available.length < 10) {
                 showToast('단어가 더 필요합니다', `학교 단어와 전술 단어를 합쳐 ${10 - available.length}개 더 저장하면 10문항 연습을 시작할 수 있습니다.`);
@@ -2351,7 +2677,7 @@
             panel.appendChild(card);
         }
 
-        function checkEnglishWordPracticeAnswer() {
+        async function checkEnglishWordPracticeAnswer() {
             if (!wordPracticeSession || wordPracticeSession.index >= wordPracticeSession.words.length) return;
             const entry = wordPracticeSession.words[wordPracticeSession.index];
             const input = document.getElementById('english-word-practice-answer');
@@ -2360,7 +2686,7 @@
                 wordPracticeSession.correctCount += 1;
                 entry.lastPracticedAt = new Date().toISOString();
                 entry.practiceCount = (entry.practiceCount || 0) + 1;
-                saveEnglishVocabulary();
+                await saveEnglishVocabulary();
                 playTacticalSound('COMPLETE');
             } else {
                 wordPracticeSession.status = 'wrong';
@@ -3073,7 +3399,7 @@
             document.getElementById('vision-file-label').textContent = '프린트물이나 손글씨 풀이를 찍어 올리면 AI가 분석합니다.';
         }
 
-        // [핵심 기능 1] Gemini API로 내신 함정 3문제 생성 (하/중/상)
+        // [핵심 기능 1] AI로 서로 다른 사고 유형의 내신 문제 3문제 생성 (하/중/상)
         async function generateThreeProblems() {
             const topicInput = document.getElementById('study-topic-input').value.trim() || `${AppState.selectedSubject} 핵심 개념`;
             const loadingEl = document.getElementById('problems-loading');
@@ -3095,15 +3421,22 @@
             loadingEl.classList.remove('hidden');
             containerEl.classList.add('opacity-40', 'pointer-events-none');
 
+            const recentQuestionKey = `valo_recent_problem_stems_${AppState.selectedSubject}_${topicInput.toLowerCase().replace(/\s+/g, '_').slice(0, 60)}`;
+            let recentQuestionStems = [];
+            try { recentQuestionStems = JSON.parse(localStorage.getItem(recentQuestionKey) || '[]'); } catch { recentQuestionStems = []; }
+            const variationSeed = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
             const systemPrompt = `너는 대한민국 중학교 3학년(예비 고1) 내신 출제 전문 AI 교관이다.
 학생이 입력한 과목(${AppState.selectedSubject})과 학습 주제(또는 첨부한 노트 사진)를 분석하여, 실제 학교 중간/기말고사에 자주 나오는 [하/중/상 난이도별 4지선다 3문제]를 JSON 배열로 출제하라.
-- 1번 문제: ROUND 1 // 난이도: 하 (핵심 개념 스캔)
-- 2번 문제: ROUND 2 // 난이도: 중 (내신 빈출 응용)
-- 3번 문제: ROUND 3 // 난이도: 상 (내신 단골 함정 킬러)
+- 세 문제는 계산 숫자만 바꾼 반복형이 되면 안 된다. 세 문제의 사고 유형을 반드시 서로 다르게 만든다.
+- 1번: 핵심 개념·정의·그래프/문장 해석 중 하나를 빠르게 확인한다.
+- 2번: 조건을 바꾸어 적용하거나, 두 개념을 비교하거나, 실제 상황에 적용한다.
+- 3번: 흔한 오답 풀이/주장을 진단하거나 여러 단계의 조건을 연결해 추론한다.
+- 학습 타겟에 맞는 방식으로 유형을 선택하고, 각 문항의 problemType에 짧은 유형 이름을 적는다. 각 level은 난이도만 표시한다.
+- 제공된 직전 문항을 재사용하거나 표현만 바꿔 출제하지 않는다. 같은 개념을 다루더라도 질문의 목표와 사고 과정이 달라야 한다.
 각 문제의 options는 반드시 4개의 보기 문자열 배열("1) ...", "2) ...", "3) ...", "4) ...")로 구성하고, answerIndex는 0~3 사이의 정수로 지정하라.
-hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실마리를 주는 힌트여야 한다.`;
+hint는 정답을 직접 말하지 않고 해당 문항의 핵심 개념을 떠올리게 하는 한 단계의 실마리여야 한다.`;
 
-            const userPrompt = `과목: ${AppState.selectedSubject}\n학습 타겟 단원/내용: ${topicInput}\n위 내용(및 첨부된 이미지가 있다면 이미지 속 필기 내용)을 바탕으로 중3 내신 대비 3문제를 출제해줘.`;
+            const userPrompt = `요청 식별자(유형 다양화): ${variationSeed}\n과목: ${AppState.selectedSubject}\n학습 타겟 단원/내용: ${topicInput}\n최근에 이미 낸 문제(질문 내용과 풀이 방식 모두 피하기): ${recentQuestionStems.length ? recentQuestionStems.join(' | ') : '없음'}\n위 내용(및 첨부 이미지 속 필기 내용)을 바탕으로 세 가지 다른 사고 유형의 중3 내신 대비 문제를 출제해줘.`;
 
             const schema = {
                 type: "ARRAY",
@@ -3111,13 +3444,14 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                     type: "OBJECT",
                     properties: {
                         level: { type: "STRING" },
+                        problemType: { type: "STRING" },
                         question: { type: "STRING" },
                         options: { type: "ARRAY", items: { type: "STRING" } },
                         answerIndex: { type: "INTEGER" },
                         hint: { type: "STRING" },
                         explanation: { type: "STRING" }
                     },
-                    required: ["level", "question", "options", "answerIndex", "hint", "explanation"]
+                    required: ["level", "problemType", "question", "options", "answerIndex", "hint", "explanation"]
                 }
             };
 
@@ -3135,8 +3469,13 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                 });
 
                 const parsed = JSON.parse(rawJson);
-                if (Array.isArray(parsed) && parsed.length >= 3) {
+                const distinctTypes = Array.isArray(parsed) ? new Set(parsed.slice(0, 3).map(problem => String(problem.problemType || '').trim().toLowerCase())).size : 0;
+                if (Array.isArray(parsed) && parsed.length >= 3 && distinctTypes === 3) {
                     AppState.currentProblems = parsed.slice(0, 3);
+                    try {
+                        const stems = [...recentQuestionStems, ...AppState.currentProblems.map(problem => `${problem.problemType || ''}: ${problem.question}`)].slice(-9);
+                        localStorage.setItem(recentQuestionKey, JSON.stringify(stems));
+                    } catch { /* Variety history is optional when browser storage is unavailable. */ }
                     AppState.solvedCount = 0;
                     renderProblemCards();
                     playTacticalSound('UNLOCK');
@@ -3155,7 +3494,7 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                 AppState.currentProblems = baseSet;
                 AppState.solvedCount = 0;
                 renderProblemCards();
-                showToast('전술 내신 3문제 배치 완료', `[${AppState.selectedSubject}] 핵심 내신 함정 3문제가 로드되었습니다.`);
+                showToast('AI 문제 생성 실패 · 예비 문제 표시', `[${AppState.selectedSubject}] 내장 예비 문제가 표시되었습니다. AI 응답이나 연결을 확인한 뒤 다시 시도해 주세요.`);
             } finally {
                 clearInterval(timerId);
                 const totalMs = Math.round(performance.now() - startedAt);
@@ -3180,6 +3519,26 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
             }
         }
 
+        function normalizeMathDisplay(value) {
+            return String(value ?? '')
+                .replace(/\$/g, '')
+                .replace(/\\(?:leq?|leqslant)\b/g, '≤').replace(/\\(?:geq?|geqslant)\b/g, '≥')
+                .replace(/\\neqq?\b/g, '≠').replace(/\\times\b/g, '×').replace(/\\cdot\b/g, '·')
+                .replace(/\\(?:rightarrow|to)\b/g, '→').replace(/\\in\b/g, '∈')
+                .replace(/\\pi\b/g, 'π').replace(/\^2\b/g, '²').replace(/\^3\b/g, '³')
+                .replace(/\\sqrt\{([^{}]+)\}/g, '√($1)')
+                .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, '($1)/($2)')
+                .replace(/\\text\{([^{}]+)\}/g, '$1').replace(/[{}]/g, '').trim();
+        }
+
+        function escapeRegExp(value) {
+            return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+        }
+
         // 3문제 카드 UI 렌더링
         function renderProblemCards() {
             const container = document.getElementById('problems-container');
@@ -3190,7 +3549,7 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                 const optionsHtml = (prob.options || []).map((opt, optIdx) => `
                     <label class="flex items-center space-x-2.5 p-2.5 rounded bg-valo-dark/90 hover:bg-white/5 border border-white/10 cursor-pointer transition-colors">
                         <input type="radio" name="prob-opt-${idx}" value="${optIdx}" class="accent-valo-red w-4 h-4">
-                        <span class="text-xs sm:text-sm text-valo-offwhite">${opt}</span>
+                        <span class="text-xs sm:text-sm text-valo-offwhite">${escapeHtml(normalizeMathDisplay(opt))}</span>
                     </label>
                 `).join('');
 
@@ -3198,16 +3557,17 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                     <div id="prob-card-${idx}" class="p-4 bg-valo-panel/80 border border-white/10 rounded space-y-3 transition-all">
                         <div class="flex items-center justify-between">
                             <span class="font-mono text-[11px] font-bold px-2 py-0.5 bg-valo-dark border ${levelColor} rounded">
-                                ${prob.level}
+                                ${escapeHtml(normalizeMathDisplay(prob.level))}
                             </span>
-                            <button onclick="askSocraticHintForProblem(${idx})" class="px-2.5 py-1 bg-valo-cyan/15 hover:bg-valo-cyan/25 text-valo-cyan border border-valo-cyan/40 rounded font-mono text-[11px] font-bold flex items-center space-x-1 transition-colors">
+                            <span class="ml-auto mr-2 rounded border border-white/10 px-2 py-0.5 text-[10px] text-valo-gray">${escapeHtml(normalizeMathDisplay(prob.problemType || '개념 적용'))}</span>
+                            <button id="prob-hint-btn-${idx}" onclick="askSocraticHintForProblem(${idx})" class="px-2.5 py-1 bg-valo-cyan/15 hover:bg-valo-cyan/25 text-valo-cyan border border-valo-cyan/40 rounded font-mono text-[11px] font-bold flex items-center space-x-1 transition-colors">
                                 <i class="ph-fill ph-lightbulb"></i>
-                                <span>소크라테스 힌트 요청</span>
+                                <span>Q${idx + 1} 개념 힌트</span>
                             </button>
                         </div>
 
                         <p class="text-sm sm:text-base font-bold text-valo-offwhite leading-snug">
-                            Q${idx + 1}. ${prob.question}
+                            Q${idx + 1}. ${escapeHtml(normalizeMathDisplay(prob.question))}
                         </p>
 
                         <div class="space-y-2">
@@ -3308,7 +3668,7 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
 
             card.classList.remove('hidden');
             document.getElementById('clutch-progress').textContent = `${unresolvedTacticalTasks.length}개 남음 · ${task.subject} / ${task.topic}`;
-            document.getElementById('clutch-question-text').textContent = task.question;
+            document.getElementById('clutch-question-text').textContent = normalizeMathDisplay(task.question);
             const options = document.getElementById('clutch-options');
             options.replaceChildren();
             task.options.forEach((option, index) => {
@@ -3317,7 +3677,7 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                 const radio = document.createElement('input');
                 radio.type = 'radio'; radio.name = 'clutch-answer'; radio.value = String(index);
                 radio.className = 'mt-0.5 accent-valo-red shrink-0';
-                const text = document.createElement('span'); text.textContent = option;
+                const text = document.createElement('span'); text.textContent = normalizeMathDisplay(option);
                 label.append(radio, text); options.appendChild(label);
             });
             const feedback = document.getElementById('clutch-feedback');
@@ -3387,7 +3747,7 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                 feedbackBox.className = 'p-3 rounded bg-emerald-950/50 border border-emerald-400/50 text-xs space-y-1 text-emerald-200';
                 feedbackBox.innerHTML = `
                     <div class="font-bold text-emerald-300">🎯 헤드샷! 정확한 내신 개념 타격입니다! (+${earnedVP} VP)</div>
-                    <p class="text-valo-offwhite/90">${prob.explanation}</p>
+                    <p class="text-valo-offwhite/90">${escapeHtml(normalizeMathDisplay(prob.explanation))}</p>
                 `;
             } else {
                 rememberMissedProblem(prob);
@@ -3397,20 +3757,33 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                 feedbackBox.className = 'p-3 rounded bg-valo-dark border border-valo-gold/50 text-xs space-y-1.5';
                 feedbackBox.innerHTML = `
                     <div class="font-bold text-valo-gold">🛡️ 내신 함정에 걸렸습니다! (소크라테스 프로토콜: 정답을 바로 공개하지 않습니다)</div>
-                    <p class="text-valo-offwhite/90"><strong>💡 튜터 힌트:</strong> ${prob.hint}</p>
+                    <p class="text-valo-offwhite/90"><strong>💡 Q${probIdx + 1} 개념 힌트:</strong> ${escapeHtml(normalizeMathDisplay(prob.hint))}</p>
                     <p class="text-[11px] text-valo-cyan">우측 채팅창에서 튜터와 대화하거나 힌트를 참고해 다른 보기를 다시 골라보세요!</p>
                 `;
             }
         }
 
         // 문제 카드에서 [소크라테스 힌트 요청] 클릭 시 우측 AI 튜터 채팅창으로 연동
+        let activeTutorProblemContext = null;
+
         function askSocraticHintForProblem(probIdx) {
             const prob = AppState.currentProblems[probIdx];
             if (!prob) return;
-
-            const promptText = `[Q${probIdx + 1} 힌트 요청] "${prob.question}" 문제를 풀고 있는데, 정답을 직접 알려주지 말고 내가 어떤 개념부터 떠올려야 할지 소크라테스식 질문으로 힌트를 줘!`;
-            document.getElementById('tutor-user-input').value = promptText;
-            sendTutorMessage();
+            const hintStages = [
+                { title: '개념 힌트', request: '정답이나 계산 결과를 말하지 말고 필요한 개념 하나와 떠올릴 질문을 제시한다.' },
+                { title: '풀이 방향', request: '개념은 이미 확인했다. 어떤 순서로 조건을 정리하고 적용할지 단계만 안내하며 결과값은 말하지 않는다.' },
+                { title: '검산 힌트', request: '풀이를 마무리할 수 있도록 흔한 실수와 검산 기준을 짚고 학생이 스스로 답을 확인하게 한다. 정답 숫자는 직접 말하지 않는다.' }
+            ];
+            const stageIndex = Math.min(prob.tutorHintLevel || 0, hintStages.length - 1);
+            const stage = hintStages[stageIndex];
+            prob.tutorHintLevel = Math.min(stageIndex + 1, hintStages.length - 1);
+            const nextStage = hintStages[Math.min(stageIndex + 1, hintStages.length - 1)];
+            const hintButton = document.getElementById(`prob-hint-btn-${probIdx}`)?.querySelector('span');
+            if (hintButton) hintButton.textContent = stageIndex === hintStages.length - 1 ? '검산 힌트 다시 보기' : `다음: ${nextStage.title} (${stageIndex + 2}/3)`;
+            activeTutorProblemContext = { index: probIdx + 1, subject: AppState.selectedSubject, topic: document.getElementById('study-topic-input').value.trim(), problem: prob, stage };
+            const choices = (prob.options || []).map((option, index) => `${index + 1}) ${normalizeMathDisplay(option)}`).join('\n');
+            const promptText = `[현재 문항 Q${probIdx + 1} · ${stage.title} ${stageIndex + 1}/3]\n과목: ${AppState.selectedSubject}\n단원: ${document.getElementById('study-topic-input').value.trim()}\n문제: ${normalizeMathDisplay(prob.question)}\n보기:\n${choices}\n요청: ${stage.request}\n문제에 직접 연결된 힌트만 주고, 이 문제가 아닌 전체 단원의 일반 설명으로 흐르지 마세요.`;
+            sendTutorMessage(promptText);
         }
 
         // [핵심 기능 2] 손글씨 풀이 / 서술형 답안 AI 첨삭 (Vision 연동)
@@ -3446,7 +3819,7 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
             const wrapper = document.createElement('div');
             wrapper.className = `flex ${isAI ? 'justify-start' : 'justify-end'}`;
 
-            const formattedText = text
+            const formattedText = escapeHtml(text)
                 .replace(/\*\*(.*?)\*\*/g, '<strong class="text-valo-gold">$1</strong>')
                 .replace(/\n/g, '<br>');
 
@@ -3473,14 +3846,16 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
             sendTutorMessage();
         }
 
-        async function sendTutorMessage() {
+        async function sendTutorMessage(prefilledPrompt = null) {
             const inputEl = document.getElementById('tutor-user-input');
-            const userText = inputEl.value.trim();
+            const userText = (prefilledPrompt || inputEl.value).trim();
             if (!userText) return;
 
+            if (!prefilledPrompt) activeTutorProblemContext = null;
             inputEl.value = '';
             appendTutorMessage('USER', userText);
             await requestSocraticTutorReply(userText);
+            activeTutorProblemContext = null;
         }
 
         async function requestSocraticTutorReply(userText) {
@@ -3490,12 +3865,15 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
 
             const topicContext = document.getElementById('study-topic-input').value.trim() || AppState.selectedSubject;
 
+            const problemDirective = activeTutorProblemContext
+                ? `\n현재 답변 대상은 오직 Q${activeTutorProblemContext.index} (${activeTutorProblemContext.stage.title})이다. 아래 학생 요청에 포함된 문제와 보기의 조건을 직접 활용하고, 단계 지침을 지켜라.`
+                : '\n학생이 특정 문항을 말하지 않았다면 질문에 포함된 대상만 답하고, 단원 전체를 막연하게 설명하지 마라.';
             const systemPrompt = `너는 중학교 3학년(예비 고1) 학생을 지도하는 발로란트(Valorant) 전술 요원 컨셉의 '소크라테스 AI 튜터'다.
 [엄격한 규칙]
 1. 학생을 '요원'이라고 부르고, '브리핑', '함정 해체', '지식 파밍', '핵심 스팟' 같은 가벼운 게임 전술 용어를 자연스럽게 섞어 친근하고 멋지게 말해라.
 2. [가장 중요] 절대 최종 정답을 바로 알려주지 마라! 대신 핵심 개념의 원리를 짚어주고, 학생이 스스로 다음 단계를 생각해서 답할 수 있도록 마지막 문장은 반드시 '소크라테스식 유도 질문'으로 끝내라.
 3. 답변은 스마트폰에서 읽기 편하도록 3~5문장 이내로 명확하고 간결하게 작성하라.
-4. 현재 학습 과목: ${AppState.selectedSubject}, 현재 단원 타겟: ${topicContext}`;
+4. 현재 학습 과목: ${AppState.selectedSubject}, 현재 단원 타겟: ${topicContext}${problemDirective}`;
 
             try {
                 const inlineImg = AppState.uploadedImageBase64
@@ -3511,7 +3889,9 @@ hint는 정답을 직접 말하지 않고 소크라테스식으로 생각할 실
                 appendTutorMessage('AI', aiReply);
             } catch (e) {
                 // 스마트 오프라인 소크라테스 응답 폴백
-                const fallbackReply = `좋은 타겟 질문이다, 요원! **[${AppState.selectedSubject} - ${topicContext}]** 스팟을 공략할 때 출제자들이 가장 많이 숨겨두는 크레모아(함정)는 **'용어의 정의와 부호/조건'**을 살짝 비트는 거다.\n\n내가 답을 바로 주면 네 실력 파밍이 안 되겠지? 먼저 이 문제에서 **가장 핵심이 되는 기준(공식이나 주어/조건) 딱 하나**만 나한테 먼저 말해줄 수 있나?`;
+                const fallbackReply = activeTutorProblemContext
+                    ? `요원, 지금은 **Q${activeTutorProblemContext.index} · ${activeTutorProblemContext.stage.title}**만 보자. ${activeTutorProblemContext.stage.title === '개념 힌트' ? `문제 단서: ${normalizeMathDisplay(activeTutorProblemContext.problem.hint || '조건에서 반복되는 핵심 개념을 찾아보세요.')}` : activeTutorProblemContext.stage.title === '풀이 방향' ? '먼저 주어진 조건을 식이나 핵심 문장으로 정리하고, 그다음 해당 개념을 적용해 보세요.' : '풀이에서 부호와 조건을 다시 대입해 결과가 문제의 범위에 맞는지 확인해 보세요.'} 어느 조건부터 확인하면 다음 단계로 갈 수 있을까?`
+                    : `좋은 타겟 질문이다, 요원! **[${AppState.selectedSubject} - ${topicContext}]**에서 가장 핵심이 되는 기준 하나를 먼저 찾아보자. 문제의 조건이나 용어 중 무엇을 먼저 확인해야 할까?`;
                 appendTutorMessage('AI', fallbackReply);
             } finally {
                 sendBtn.disabled = false;
